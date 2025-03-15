@@ -12,6 +12,7 @@ import { Building, MapPin, Users, Globe, Upload, FileText, Loader2 } from "lucid
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { createSupplier, transformFormToSupplierData } from "@/lib/supabase/client"
+import { CountryCombobox } from "@/components/ui/country-combobox"
 
 interface AddSupplierFormProps {
   initialName: string
@@ -39,6 +40,9 @@ export function AddSupplierForm({ initialName, onSubmit }: AddSupplierFormProps)
     setIsLoading(true)
 
     try {
+      // Log the form data for debugging
+      console.log("Submitting supplier with data:", formData);
+      
       // Transform form data and create supplier in Supabase
       const supplierData = transformFormToSupplierData(formData);
       
@@ -162,22 +166,13 @@ export function AddSupplierForm({ initialName, onSubmit }: AddSupplierFormProps)
               <div className="space-y-2">
                 <Label htmlFor="country">
                   <MapPin className="inline-block h-4 w-4 mr-1" />
-                  Land
+                  Country
                 </Label>
-                <Select value={formData.country} onValueChange={(value) => updateField("country", value)} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="germany">Germany</SelectItem>
-                    <SelectItem value="france">France</SelectItem>
-                    <SelectItem value="italy">Italy</SelectItem>
-                    <SelectItem value="spain">Spain</SelectItem>
-                    <SelectItem value="united states">United States</SelectItem>
-                    <SelectItem value="china">China</SelectItem>
-                    <SelectItem value="japan">Japan</SelectItem>
-                  </SelectContent>
-                </Select>
+                <CountryCombobox
+                  value={formData.country}
+                  onChange={(value) => updateField("country", value)}
+                  required
+                />
               </div>
             </div>
 
@@ -185,7 +180,7 @@ export function AddSupplierForm({ initialName, onSubmit }: AddSupplierFormProps)
               <div className="space-y-2">
                 <Label htmlFor="employees">
                   <Users className="inline-block h-4 w-4 mr-1" />
-                  Anzahl Mitarbeiter
+                  Number of Employees
                 </Label>
                 <Input
                   id="employees"

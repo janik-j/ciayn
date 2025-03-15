@@ -1,10 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Create a single supabase client for client-side use
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create a single instance of the Supabase client
+let supabaseInstance: SupabaseClient | null = null;
+
+export const getSupabaseClient = () => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true
+      }
+    });
+  }
+  return supabaseInstance;
+};
+
+// Export a singleton instance
+export const supabase = getSupabaseClient();
 
 export type SupplierData = {
   id?: string;
@@ -124,6 +139,9 @@ export function transformFormToSupplierData(formData: {
   employees: string;
   website: string;
 }): Omit<SupplierData, 'id'> {
+  // Log country info for debugging
+  console.log("Transforming country:", formData.country);
+  
   return {
     name: formData.name,
     industry: formData.industry,

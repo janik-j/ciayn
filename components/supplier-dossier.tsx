@@ -82,6 +82,7 @@ type DisplaySupplierData = {
     reach: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
   };
   recommendations: string[];
+  countryScore?: number; // Optional for backward compatibility
 }
 
 interface SupplierDossierProps {
@@ -95,6 +96,8 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const { toast } = useToast()
   const [isAlreadyAdded, setIsAlreadyAdded] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
+  const [countryScore, setCountryScore] = useState<number | null>(null); // Change to null for initial state
+  const [isLoadingScore, setIsLoadingScore] = useState(false);
 
   // Document states for each regulation
   const [lksgDocuments, setLksgDocuments] = useState<DocumentUploadType[]>([
@@ -207,16 +210,20 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     try {
       const { data, error } = await supabase
         .from('user_supplier_association')
-        .select('*')
+        .select('user, supplier')
         .eq('user', user.id)
         .eq('supplier', results.id)
-        .single()
+        .maybeSingle()
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error code
+      if (error && error.code !== 'PGRST116') {
         console.error('Error checking supplier association:', error)
+        toast({
+          title: "Error",
+          description: "Failed to check supplier status. Please try again.",
+          variant: "destructive"
+        })
       }
 
-      // If data exists, the supplier is already added
       setIsAlreadyAdded(!!data)
     } catch (error) {
       console.error('Unexpected error checking supplier association:', error)
@@ -317,18 +324,19 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     }
 
     try {
-      // Insert a record into the user_supplier_association table
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_supplier_association')
         .insert([
           { 
             user: user.id, 
-            supplier: results.id 
+            supplier: results.id,
+            created_at: new Date().toISOString()
           }
         ])
+        .select('user, supplier')
+        .single()
       
       if (error) {
-        // Check if it's a duplicate entry error
         if (error.code === '23505') {
           toast({
             title: "Already added",
@@ -341,7 +349,6 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
         throw error
       }
       
-      // Update the state to reflect that the supplier is now added
       setIsAlreadyAdded(true)
       
       toast({
@@ -379,18 +386,18 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     }
 
     try {
-      // Delete the record from the user_supplier_association table
       const { error } = await supabase
         .from('user_supplier_association')
         .delete()
         .eq('user', user.id)
         .eq('supplier', results.id)
+        .select('user, supplier')
+        .single()
       
       if (error) {
         throw error
       }
       
-      // Update the state to reflect that the supplier is now removed
       setIsAlreadyAdded(false)
       
       toast({
@@ -415,6 +422,19 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
       addToMySuppliers()
     }
   }
+
+  // Update the useEffect to handle loading state
+  useEffect(() => {
+    const loadCountryScore = async () => {
+      if (results) {
+        setIsLoadingScore(true);
+        const score = await getCountryScore();
+        setCountryScore(score);
+        setIsLoadingScore(false);
+      }
+    };
+    loadCountryScore();
+  }, [results]);
 
   return (
     <div className="space-y-6">
@@ -448,7 +468,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
           <Tabs defaultValue="main" className="w-full">
             <TabsList className="w-full border-b">
               <TabsTrigger value="main" className="flex-1">Main</TabsTrigger>
-              <TabsTrigger value="lksg" className="flex-1">German Supply Chain Act (LkSG)</TabsTrigger>
+              <TabsTrigger value="lksg" className="flex-1">Supply Chain Due Diligence Act</TabsTrigger>
               <TabsTrigger value="csrd" className="flex-1">CSRD</TabsTrigger>
               <TabsTrigger value="cbam" className="flex-1">CBAM</TabsTrigger>
               <TabsTrigger value="reach" className="flex-1">REACH</TabsTrigger>
@@ -464,7 +484,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
               />
             </TabsContent>
 
-            {/* German Supply Chain Act (LkSG) Tab Content */}
+            {/* Supply Chain Due Diligence Act Tab Content */}
             <TabsContent value="lksg">
               <LksgTab 
                 supplier={results} 
