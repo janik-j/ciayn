@@ -46,9 +46,9 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const router = useRouter()
 
   const handleCompanyFound = (companyData: DisplaySupplierData) => {
-    // If we're on the supplier detail page, redirect to the new supplier
+    // If we're on the supplier detail page, redirect to profile
     if (initialData) {
-      router.push(`/supplier/${encodeURIComponent(companyData.name)}`)
+      router.push(`/profile/${encodeURIComponent(companyData.name)}`);
     } else {
       // Otherwise just update the state
       setResults(companyData)
@@ -116,8 +116,8 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Supplier Dossier: {results.name}</CardTitle>
-                  <CardDescription>Compliance and ESG risk assessment based on web search results</CardDescription>
+                  <CardTitle>Supplier Profile: {results.name}</CardTitle>
+                  <CardDescription>ESG risk assessment and compliance status</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleNewSearch}>
                   New Search

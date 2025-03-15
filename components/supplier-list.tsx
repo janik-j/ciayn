@@ -174,9 +174,9 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
     }
   }
 
-  // View details of a supplier - now redirects to supplier page
+  // View details of a supplier - now redirects to profile page
   const viewSupplierDetails = (supplier: Supplier) => {
-    router.push(`/supplier/${encodeURIComponent(supplier.name)}`);
+    router.push(`/profile/${encodeURIComponent(supplier.name)}`);
   }
 
   // Close supplier details
@@ -216,10 +216,10 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
               </>
             )}
           </Button>
-          <Link href="/supplier/add">
+          <Link href="/profile/add">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Add Supplier
+              Add Profile
             </Button>
           </Link>
         </div>
@@ -312,7 +312,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                           size="sm"
                           onClick={() => viewSupplierDetails(supplier)}
                         >
-                          View Details
+                          View Profile
                           <ChevronRight className="ml-1 h-4 w-4" />
                         </Button>
                       </div>
