@@ -1,7 +1,6 @@
 import SupplierDossier from "@/components/supplier-dossier"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
-import { ComplianceOverview } from "@/components/compliance-overview"
 import Link from "next/link"
 import { ListFilter, Database } from "lucide-react"
 
@@ -27,11 +26,6 @@ export default function Home() {
             </Link>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 gap-6 mb-6">
-          <ComplianceOverview />
-        </div>
-
         <SupplierDossier />
       </main>
     </div>
