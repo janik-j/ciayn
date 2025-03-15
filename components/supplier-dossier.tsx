@@ -49,7 +49,7 @@ export default function SupplierDossier() {
         name: formData.name,
         industry: formData.industry,
         country: formData.country,
-        employees: Number.parseInt(formData.employees),
+        employees: isNaN(Number(formData.employees)) ? 0 : Number(formData.employees),
         website: formData.website,
         esgRisk: {
           environmental: "Medium",
@@ -156,7 +156,7 @@ export default function SupplierDossier() {
                     <Users className="h-4 w-4 text-slate-400" />
                     <div>
                       <p className="text-xs text-slate-500">Anzahl Mitarbeiter</p>
-                      <p className="text-sm font-medium">{results.employees.toLocaleString()}</p>
+                      <p className="text-sm font-medium">{results.employees}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
