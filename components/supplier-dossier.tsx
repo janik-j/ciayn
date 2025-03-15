@@ -8,77 +8,39 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Upload, AlertTriangle, CheckCircle, FileText, Globe, Building, MapPin, Users } from "lucide-react"
-import { SupplierSearchForm } from "./supplier-search-form"
+import { CompanySearch } from "./company-search"
+
+// Use type from our client
+import { SupplierData } from "@/lib/supabase/client"
+
+type DisplaySupplierData = {
+  id?: string;
+  name: string;
+  industry: string;
+  country: string;
+  employees: number;
+  website: string;
+  esgRisk: {
+    environmental: "Low" | "Medium" | "High";
+    social: "Low" | "Medium" | "High";
+    governance: "Low" | "Medium" | "High";
+  };
+  redFlags: string[];
+  complianceStatus: {
+    lksg: "Compliant" | "Partially Compliant" | "Non-Compliant";
+    cbam: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
+    csdd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
+    csrd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
+    reach: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
+  };
+  recommendations: string[];
+}
 
 export default function SupplierDossier() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [results, setResults] = useState<null | {
-    name: string
-    industry: string
-    country: string
-    employees: number
-    website: string
-    esgRisk: {
-      environmental: "Low" | "Medium" | "High"
-      social: "Low" | "Medium" | "High"
-      governance: "Low" | "Medium" | "High"
-    }
-    redFlags: string[]
-    complianceStatus: {
-      lksg: "Compliant" | "Partially Compliant" | "Non-Compliant"
-      cbam: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-      csdd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-      csrd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-      reach: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-    }
-    recommendations: string[]
-  }>(null)
+  const [results, setResults] = useState<DisplaySupplierData | null>(null)
 
-  const handleSubmit = (formData: {
-    name: string
-    industry: string
-    country: string
-    employees: string
-    website: string
-  }) => {
-    setIsLoading(true)
-
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setResults({
-        name: formData.name,
-        industry: formData.industry,
-        country: formData.country,
-        employees: isNaN(Number(formData.employees)) ? 0 : Number(formData.employees),
-        website: formData.website,
-        esgRisk: {
-          environmental: "Medium",
-          social: "Low",
-          governance: "Medium",
-        },
-        redFlags: [
-          "Fined for pollution violation (Brazil, Jan 2024)",
-          "No human rights policy found online",
-          "Limited transparency in supply chain documentation",
-          "REACH compliance documentation incomplete",
-        ],
-        complianceStatus: {
-          lksg: "Partially Compliant",
-          cbam: "Unknown",
-          csdd: "Partially Compliant",
-          csrd: "Non-Compliant",
-          reach: "Partially Compliant",
-        },
-        recommendations: [
-          "Request updated Environmental Policy and Human Rights Policy",
-          "Conduct supplier audit focused on environmental compliance",
-          "Require carbon emissions data for CBAM compliance assessment",
-          "Request CSRD reporting documentation",
-          "Verify REACH registration for all chemical substances",
-        ],
-      })
-      setIsLoading(false)
-    }, 1500)
+  const handleCompanyFound = (companyData: DisplaySupplierData) => {
+    setResults(companyData)
   }
 
   const getRiskColor = (risk: "Low" | "Medium" | "High") => {
@@ -124,14 +86,21 @@ export default function SupplierDossier() {
 
   return (
     <div className="space-y-6">
-      <SupplierSearchForm onSubmit={handleSubmit} isLoading={isLoading} />
-
-      {results && (
+      {!results ? (
+        <CompanySearch onCompanyFound={handleCompanyFound} />
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Supplier Dossier: {results.name}</CardTitle>
-              <CardDescription>Compliance and ESG risk assessment based on web search results</CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Supplier Dossier: {results.name}</CardTitle>
+                  <CardDescription>Compliance and ESG risk assessment based on web search results</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setResults(null)}>
+                  New Search
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {/* Company Information Section */}
@@ -219,13 +188,23 @@ export default function SupplierDossier() {
                   <div className="pt-4">
                     <h3 className="text-sm font-medium mb-2">Red Flags</h3>
                     <div className="space-y-2">
-                      {results.redFlags.map((flag, index) => (
-                        <Alert key={index}>
-                          <AlertTriangle className="h-4 w-4 text-amber-500" />
-                          <AlertTitle className="ml-2 text-sm font-medium">Risk Identified</AlertTitle>
-                          <AlertDescription className="ml-2 text-sm">{flag}</AlertDescription>
+                      {results.redFlags.length > 0 ? (
+                        results.redFlags.map((flag, index) => (
+                          <Alert key={index}>
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <AlertTitle className="ml-2 text-sm font-medium">Risk Identified</AlertTitle>
+                            <AlertDescription className="ml-2 text-sm">{flag}</AlertDescription>
+                          </Alert>
+                        ))
+                      ) : (
+                        <Alert>
+                          <CheckCircle className="h-4 w-4 text-emerald-500" />
+                          <AlertTitle className="ml-2 text-sm font-medium">No Risks Identified</AlertTitle>
+                          <AlertDescription className="ml-2 text-sm">
+                            No significant red flags have been identified for this supplier.
+                          </AlertDescription>
                         </Alert>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </TabsContent>
