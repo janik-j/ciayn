@@ -209,7 +209,7 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
       article.snippet.toLowerCase().includes(textLower)
     )
     
-    if (exactMatch) return exactMatch.url
+    if (exactMatch) return ensureValidUrl(exactMatch.url)
     
     // If no exact match, look for keyword matches
     const words = textLower.split(/\s+/).filter(word => word.length > 4)
@@ -220,11 +220,24 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
         article.snippet.toLowerCase().includes(word)
       )
       
-      if (match) return match.url
+      if (match) return ensureValidUrl(match.url)
     }
     
     // If no matches, return the first article URL as a fallback
-    return articles[0]?.url
+    return articles[0]?.url ? ensureValidUrl(articles[0].url) : undefined
+  }
+
+  // Helper function to ensure a URL is valid and has a protocol
+  const ensureValidUrl = (url: string): string => {
+    if (!url) return '';
+    
+    // Check if URL starts with http:// or https://
+    if (!url.match(/^https?:\/\//i)) {
+      // Add https:// prefix if missing
+      return `https://${url}`;
+    }
+    
+    return url;
   }
 
   // Fetch articles on component mount
@@ -346,6 +359,45 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
     )
   }
 
+  // Helper component for source links
+  const SourceLink = ({ url, color }: { url?: string, color: string }) => {
+    if (!url) return null;
+    
+    const baseClasses = "flex items-center gap-1 text-xs font-medium rounded-md px-2 py-1 transition-colors";
+    
+    // Color classes for different risk categories
+    const colorClasses = {
+      'emerald': `bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700`,
+      'blue': `bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700`,
+      'purple': `bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700`,
+      'orange': `bg-orange-50 text-orange-600 hover:bg-orange-100 hover:text-orange-700`,
+      'slate': `bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-700`,
+    };
+    
+    // Get the right color or default to slate
+    const colorClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.slate;
+    
+    return (
+      <a 
+        href={url} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className={`${baseClasses} ${colorClass}`}
+        onClick={(e) => {
+          // Prevent click if URL is invalid
+          if (!url.startsWith('http')) {
+            e.preventDefault();
+            console.warn('Invalid URL:', url);
+            alert('Sorry, source link is not available.');
+          }
+        }}
+      >
+        <Link className="h-3.5 w-3.5" />
+        <span>Source</span>
+      </a>
+    );
+  }
+
   // Function to render AI analysis results
   const renderAnalysis = () => {
     if (isAnalyzing) {
@@ -418,14 +470,7 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
                       <span className="text-green-500 mt-1">•</span>
                       <span className="flex-1">{risk.text}</span>
                       {risk.source || findArticleUrl(risk.text) ? (
-                        <a 
-                          href={risk.source || findArticleUrl(risk.text)} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-emerald-500 hover:text-emerald-600 flex-shrink-0"
-                        >
-                          <Link className="h-4 w-4" />
-                        </a>
+                        <SourceLink url={risk.source || findArticleUrl(risk.text)} color="emerald" />
                       ) : null}
                     </li>
                   ))
@@ -450,14 +495,7 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
                       <span className="text-blue-500 mt-1">•</span>
                       <span className="flex-1">{risk.text}</span>
                       {risk.source || findArticleUrl(risk.text) ? (
-                        <a 
-                          href={risk.source || findArticleUrl(risk.text)} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-blue-500 hover:text-blue-600 flex-shrink-0"
-                        >
-                          <Link className="h-4 w-4" />
-                        </a>
+                        <SourceLink url={risk.source || findArticleUrl(risk.text)} color="blue" />
                       ) : null}
                     </li>
                   ))
@@ -482,14 +520,7 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
                       <span className="text-purple-500 mt-1">•</span>
                       <span className="flex-1">{risk.text}</span>
                       {risk.source || findArticleUrl(risk.text) ? (
-                        <a 
-                          href={risk.source || findArticleUrl(risk.text)} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-purple-500 hover:text-purple-600 flex-shrink-0"
-                        >
-                          <Link className="h-4 w-4" />
-                        </a>
+                        <SourceLink url={risk.source || findArticleUrl(risk.text)} color="purple" />
                       ) : null}
                     </li>
                   ))
@@ -514,14 +545,7 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
                       <span className="text-orange-500 mt-1">•</span>
                       <span className="flex-1">{risk.text}</span>
                       {risk.source || findArticleUrl(risk.text) ? (
-                        <a 
-                          href={risk.source || findArticleUrl(risk.text)} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-orange-500 hover:text-orange-600 flex-shrink-0"
-                        >
-                          <Link className="h-4 w-4" />
-                        </a>
+                        <SourceLink url={risk.source || findArticleUrl(risk.text)} color="orange" />
                       ) : null}
                     </li>
                   ))
@@ -543,14 +567,7 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
                   <span className="flex-1">{finding.text}</span>
                   {finding.source || findArticleUrl(finding.text) ? (
-                    <a 
-                      href={finding.source || findArticleUrl(finding.text)} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-slate-500 hover:text-slate-700 flex-shrink-0"
-                    >
-                      <Link className="h-4 w-4" />
-                    </a>
+                    <SourceLink url={finding.source || findArticleUrl(finding.text)} color="emerald" />
                   ) : null}
                 </li>
               ))}
@@ -568,14 +585,7 @@ export function NewsFeedAnalyzer({ companyName, industry }: NewsFeedAnalyzerProp
                   <span className="text-amber-500 mt-0.5">→</span>
                   <span className="flex-1">{recommendation.text}</span>
                   {recommendation.source || findArticleUrl(recommendation.text) ? (
-                    <a 
-                      href={recommendation.source || findArticleUrl(recommendation.text)} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-slate-500 hover:text-slate-700 flex-shrink-0"
-                    >
-                      <Link className="h-4 w-4" />
-                    </a>
+                    <SourceLink url={recommendation.source || findArticleUrl(recommendation.text)} color="amber" />
                   ) : null}
                 </li>
               ))}
