@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   try {
     // Get query parameters from the request
     const url = new URL(request.url);
-    const company = url.searchParams.get('company') || 'Apple';
+    const company = url.searchParams.get('query') || 'Apple';
     const industry = url.searchParams.get('industry') || 'Technology';
     
     // Google News RSS feed URL with the company as the search term
@@ -119,7 +119,6 @@ function analyzeNewsItem(
         category: 'environmental',
         severity
       });
-      break; // Only add one environmental risk factor
     }
   }
   

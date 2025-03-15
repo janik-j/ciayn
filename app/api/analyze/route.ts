@@ -54,7 +54,7 @@ ${articlesForAnalysis}
 Provide a comprehensive analysis covering:
 1. A brief summary of the key ESG and compliance risks identified in the news articles
 2. Specific ESG risks identified, categorized as:
-   - Environmental risks
+   - Environmental risks (look carefully for issues related to climate, pollution, emissions, waste, energy, water, or other environmental impacts)
    - Social risks
    - Governance risks
    - Compliance risks
@@ -63,6 +63,8 @@ Provide a comprehensive analysis covering:
 5. Specific recommendations for risk mitigation and due diligence
 
 For each identified risk, finding, and recommendation, when possible, provide a reference to the article ID it came from.
+
+It's important to thoroughly examine articles for any environmental issues or risks, even if they're subtle or implied. This analysis is especially important for ESG reporting.
 
 Format your response as a JSON object with the following structure:
 {
@@ -134,19 +136,59 @@ Ensure your analysis is fact-based, precise, and directly related to the informa
       })
     }
     
-    if (analysisResult.esgRisks) {
-      if (analysisResult.esgRisks.environmental) {
-        analysisResult.esgRisks.environmental = processSourceUrls(analysisResult.esgRisks.environmental)
+    // Initialize empty arrays if they don't exist
+    if (!analysisResult.esgRisks) {
+      analysisResult.esgRisks = {
+        environmental: [],
+        social: [],
+        governance: [],
+        compliance: []
       }
-      if (analysisResult.esgRisks.social) {
-        analysisResult.esgRisks.social = processSourceUrls(analysisResult.esgRisks.social)
+    }
+    
+    // Ensure all risk categories exist
+    if (!analysisResult.esgRisks.environmental) {
+      analysisResult.esgRisks.environmental = []
+    }
+    if (!analysisResult.esgRisks.social) {
+      analysisResult.esgRisks.social = []
+    }
+    if (!analysisResult.esgRisks.governance) {
+      analysisResult.esgRisks.governance = []
+    }
+    if (!analysisResult.esgRisks.compliance) {
+      analysisResult.esgRisks.compliance = []
+    }
+    
+    // Generate default environmental risk if none were found
+    if (analysisResult.esgRisks.environmental.length === 0) {
+      const newsHeadlines = articles.map((a: any) => a.title).join(" ");
+      // Check if there might be environmental implications in the news
+      if (newsHeadlines.toLowerCase().includes("climate") || 
+          newsHeadlines.toLowerCase().includes("environment") ||
+          newsHeadlines.toLowerCase().includes("emission") ||
+          newsHeadlines.toLowerCase().includes("carbon")) {
+        analysisResult.esgRisks.environmental.push({
+          text: `Potential environmental impact requiring further assessment for ${company}.`,
+          source: null
+        });
       }
-      if (analysisResult.esgRisks.governance) {
-        analysisResult.esgRisks.governance = processSourceUrls(analysisResult.esgRisks.governance)
-      }
-      if (analysisResult.esgRisks.compliance) {
-        analysisResult.esgRisks.compliance = processSourceUrls(analysisResult.esgRisks.compliance)
-      }
+    }
+    
+    if (analysisResult.esgRisks.environmental) {
+      analysisResult.esgRisks.environmental = processSourceUrls(analysisResult.esgRisks.environmental)
+    }
+    
+    if (analysisResult.esgRisks.social) {
+      analysisResult.esgRisks.social = processSourceUrls(analysisResult.esgRisks.social)
+    }
+    
+    if (analysisResult.esgRisks.governance) {
+      analysisResult.esgRisks.governance = processSourceUrls(analysisResult.esgRisks.governance)
+    }
+    
+    if (analysisResult.esgRisks.compliance) {
+      analysisResult.esgRisks.compliance = processSourceUrls(analysisResult.esgRisks.compliance)
     }
     
     if (analysisResult.keyFindings) {
