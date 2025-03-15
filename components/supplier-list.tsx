@@ -17,8 +17,12 @@ import {
   MapPin,
   Users,
   AlertTriangle,
+  X
 } from "lucide-react"
 import Link from "next/link"
+import { SupplierDetail } from "@/components/supplier-detail"
+import { NewsFeedAnalyzer } from "@/components/news-feed-analyzer"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Define the supplier type
 type Supplier = {
@@ -49,6 +53,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [refreshingIds, setRefreshingIds] = useState<string[]>([])
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
 
   // Only fetch suppliers if no initial data was provided
   useEffect(() => {
@@ -156,6 +161,60 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
       default:
         return "bg-slate-100 text-slate-800 border-slate-200"
     }
+  }
+
+  // View details of a supplier
+  const viewSupplierDetails = (id: string) => {
+    setSelectedSupplierId(id);
+  }
+
+  // Close supplier details
+  const closeSupplierDetails = () => {
+    setSelectedSupplierId(null);
+  }
+
+  // If supplier details are selected, show the details
+  if (selectedSupplierId) {
+    // Find the selected supplier to pass company name and industry to NewsFeedAnalyzer
+    const selectedSupplier = suppliers.find(supplier => supplier.id === selectedSupplierId);
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={closeSupplierDetails}>
+            <X className="h-4 w-4 mr-2" />
+            Close Details
+          </Button>
+          <h2 className="text-xl font-semibold">
+            {selectedSupplier?.name || 'Supplier Details'}
+          </h2>
+        </div>
+        
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="details">Supplier Details</TabsTrigger>
+            <TabsTrigger value="news">News Feed</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details">
+            <SupplierDetail id={selectedSupplierId} />
+          </TabsContent>
+          
+          <TabsContent value="news">
+            {selectedSupplier && (
+              <Card>
+                <CardContent className="pt-6">
+                  <NewsFeedAnalyzer
+                    companyName={selectedSupplier.name}
+                    industry={selectedSupplier.industry}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
   }
 
   return (
@@ -280,12 +339,13 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                             <RefreshCw className="h-4 w-4" />
                           )}
                         </Button>
-                        <Link href={`/supplier/${supplier.id}`} passHref>
-                          <Button size="sm">
-                            View Details
-                            <ChevronRight className="ml-1 h-4 w-4" />
-                          </Button>
-                        </Link>
+                        <Button 
+                          size="sm"
+                          onClick={() => viewSupplierDetails(supplier.id)}
+                        >
+                          View Details
+                          <ChevronRight className="ml-1 h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
 

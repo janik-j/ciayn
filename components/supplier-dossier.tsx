@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Upload, AlertTriangle, CheckCircle, FileText, Globe, Building, MapPin, Users } from "lucide-react"
 import { CompanySearch } from "./company-search"
-
+import { NewsFeedAnalyzer } from "./news-feed-analyzer"
 // Use type from our client
 import { SupplierData } from "@/lib/supabase/client"
 
@@ -183,8 +183,12 @@ export default function SupplierDossier() {
                       </div>
                       <Progress value={getRiskProgress(results.esgRisk.governance)} className="h-2" />
                     </div>
-                  </div>
 
+
+                  </div>
+                  <div className="pt-4">
+                    <NewsFeedAnalyzer companyName={results.name} industry={results.industry} />
+                  </div>
                   <div className="pt-4">
                     <h3 className="text-sm font-medium mb-2">Red Flags</h3>
                     <div className="space-y-2">
