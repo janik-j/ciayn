@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Upload, AlertTriangle, CheckCircle, FileText, Globe, Building, MapPin, Users } from "lucide-react"
 import { CompanySearch } from "./company-search"
 import { NewsFeedAnalyzer } from "./news-feed-analyzer"
+import { useRouter } from "next/navigation"
 // Use type from our client
 import { SupplierData } from "@/lib/supabase/client"
 
@@ -27,7 +28,7 @@ type DisplaySupplierData = {
   };
   redFlags: string[];
   complianceStatus: {
-    lksg: "Compliant" | "Partially Compliant" | "Non-Compliant";
+    lksg: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
     cbam: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
     csdd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
     csrd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
@@ -36,11 +37,32 @@ type DisplaySupplierData = {
   recommendations: string[];
 }
 
-export default function SupplierDossier() {
-  const [results, setResults] = useState<DisplaySupplierData | null>(null)
+interface SupplierDossierProps {
+  initialData?: DisplaySupplierData;
+}
+
+export default function SupplierDossier({ initialData }: SupplierDossierProps) {
+  const [results, setResults] = useState<DisplaySupplierData | null>(initialData || null)
+  const router = useRouter()
 
   const handleCompanyFound = (companyData: DisplaySupplierData) => {
-    setResults(companyData)
+    // If we're on the supplier detail page, redirect to the new supplier
+    if (initialData) {
+      router.push(`/supplier/${encodeURIComponent(companyData.name)}`)
+    } else {
+      // Otherwise just update the state
+      setResults(companyData)
+    }
+  }
+
+  const handleNewSearch = () => {
+    // If we're on the supplier detail page, go back to dashboard
+    if (initialData) {
+      router.push('/dashboard')
+    } else {
+      // Otherwise just clear the results
+      setResults(null)
+    }
   }
 
   const getRiskColor = (risk: "Low" | "Medium" | "High") => {
@@ -97,7 +119,7 @@ export default function SupplierDossier() {
                   <CardTitle>Supplier Dossier: {results.name}</CardTitle>
                   <CardDescription>Compliance and ESG risk assessment based on web search results</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setResults(null)}>
+                <Button variant="outline" size="sm" onClick={handleNewSearch}>
                   New Search
                 </Button>
               </div>

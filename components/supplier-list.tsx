@@ -20,6 +20,7 @@ import {
   X
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { SupplierDetail } from "@/components/supplier-detail"
 import { NewsFeedAnalyzer } from "@/components/news-feed-analyzer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -54,6 +55,8 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
   const [searchTerm, setSearchTerm] = useState("")
   const [refreshingIds, setRefreshingIds] = useState<string[]>([])
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
+  const [filtersVisible, setFiltersVisible] = useState(false)
+  const router = useRouter()
 
   // Only fetch suppliers if no initial data was provided
   useEffect(() => {
@@ -147,6 +150,14 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
     }
   }
 
+  const getOverallRiskBadge = (risk: "Low" | "Medium" | "High") => {
+    return (
+      <Badge className={getRiskColor(risk)}>
+        {risk} Risk
+      </Badge>
+    )
+  }
+
   // Get color for compliance status
   const getComplianceColor = (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => {
     switch (status) {
@@ -163,58 +174,14 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
     }
   }
 
-  // View details of a supplier
-  const viewSupplierDetails = (id: string) => {
-    setSelectedSupplierId(id);
+  // View details of a supplier - now redirects to supplier page
+  const viewSupplierDetails = (supplier: Supplier) => {
+    router.push(`/supplier/${encodeURIComponent(supplier.name)}`);
   }
 
   // Close supplier details
   const closeSupplierDetails = () => {
     setSelectedSupplierId(null);
-  }
-
-  // If supplier details are selected, show the details
-  if (selectedSupplierId) {
-    // Find the selected supplier to pass company name and industry to NewsFeedAnalyzer
-    const selectedSupplier = suppliers.find(supplier => supplier.id === selectedSupplierId);
-    
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={closeSupplierDetails}>
-            <X className="h-4 w-4 mr-2" />
-            Close Details
-          </Button>
-          <h2 className="text-xl font-semibold">
-            {selectedSupplier?.name || 'Supplier Details'}
-          </h2>
-        </div>
-        
-        <Tabs defaultValue="details" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="details">Supplier Details</TabsTrigger>
-            <TabsTrigger value="news">News Feed</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="details">
-            <SupplierDetail id={selectedSupplierId} />
-          </TabsContent>
-          
-          <TabsContent value="news">
-            {selectedSupplier && (
-              <Card>
-                <CardContent className="pt-6">
-                  <NewsFeedAnalyzer
-                    companyName={selectedSupplier.name}
-                    industry={selectedSupplier.industry}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-    );
   }
 
   return (
@@ -249,10 +216,12 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
               </>
             )}
           </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Supplier
-          </Button>
+          <Link href="/supplier/add">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Supplier
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -286,7 +255,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
             <Card key={supplier.id} className="overflow-hidden hover:shadow-md transition-shadow">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
-                  <div className={`w-2 md:w-1 flex-shrink-0 ${getRiskColor(supplier.esgRisk.overall)}`} />
+                  <div className={`w-2 md:w-1 flex-shrink-0 ${getRiskColor(supplier.esgRisk.overall).split(' ')[0]}`} />
                   <div className="flex-1 p-4 md:p-6">
                     <div className="flex flex-col md:flex-row justify-between gap-4">
                       <div className="space-y-1 md:space-y-2">
@@ -341,7 +310,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                         </Button>
                         <Button 
                           size="sm"
-                          onClick={() => viewSupplierDetails(supplier.id)}
+                          onClick={() => viewSupplierDetails(supplier)}
                         >
                           View Details
                           <ChevronRight className="ml-1 h-4 w-4" />
