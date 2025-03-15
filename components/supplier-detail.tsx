@@ -264,21 +264,21 @@ export function SupplierDetail({ id }: { id: string }) {
                 <div className="flex items-center gap-2">
                   <Building className="h-4 w-4 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500">Branche</p>
+                    <p className="text-xs text-slate-500">Industry</p>
                     <p className="text-sm font-medium">{supplier.industry}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500">Land</p>
+                    <p className="text-xs text-slate-500">Country</p>
                     <p className="text-sm font-medium">{supplier.country}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500">Anzahl Mitarbeiter</p>
+                    <p className="text-xs text-slate-500">Number of Employees</p>
                     <p className="text-sm font-medium">{supplier.employees.toLocaleString()}</p>
                   </div>
                 </div>
@@ -367,7 +367,7 @@ export function SupplierDetail({ id }: { id: string }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base">German Supply Chain Act (LkSG)</CardTitle>
+                      <CardTitle className="text-base">Supply Chain Due Diligence Act</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between">

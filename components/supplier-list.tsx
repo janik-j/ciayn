@@ -132,7 +132,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
               if (supplier.id === id) {
                 return {
                   ...supplier,
-                  lastUpdated: new Date().toLocaleDateString('de-DE', {
+                  lastUpdated: new Date().toLocaleDateString('en-US', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric'

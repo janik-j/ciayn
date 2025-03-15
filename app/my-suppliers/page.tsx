@@ -162,7 +162,7 @@ export default function MySuppliersPage() {
         let lastUpdated = "Unknown date"
         try {
           if (supplier.last_updated) {
-            lastUpdated = new Date(supplier.last_updated).toLocaleDateString('de-DE', {
+            lastUpdated = new Date(supplier.last_updated).toLocaleDateString('en-US', {
               day: '2-digit',
               month: '2-digit',
               year: 'numeric'

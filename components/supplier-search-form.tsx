@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Building, MapPin, Users, Globe, ChevronRight, Loader2 } from "lucide-react"
+import { CountryCombobox } from "@/components/ui/country-combobox"
 
 interface SupplierFormData {
   name: string
@@ -112,18 +113,11 @@ export function SupplierSearchForm({ onSubmit, isLoading }: SupplierSearchFormPr
                   <MapPin className="inline-block h-4 w-4 mr-1" />
                   Land
                 </Label>
-                <Select value={formData.country} onValueChange={(value) => updateField("country", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="germany">Germany</SelectItem>
-                    <SelectItem value="france">France</SelectItem>
-                    <SelectItem value="italy">Italy</SelectItem>
-                    <SelectItem value="spain">Spain</SelectItem>
-                    <SelectItem value="uk">United Kingdom</SelectItem>
-                  </SelectContent>
-                </Select>
+                <CountryCombobox
+                  value={formData.country}
+                  onChange={(value) => updateField("country", value)}
+                  required
+                />
               </div>
             </div>
             <div className="flex justify-between">
@@ -143,7 +137,7 @@ export function SupplierSearchForm({ onSubmit, isLoading }: SupplierSearchFormPr
               <div className="space-y-2">
                 <Label htmlFor="employees">
                   <Users className="inline-block h-4 w-4 mr-1" />
-                  Anzahl Mitarbeiter
+                  Number of Employees
                 </Label>
                 <Input
                   id="employees"

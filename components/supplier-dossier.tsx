@@ -29,6 +29,7 @@ import { SupplierData, supabase } from "@/lib/supabase/client"
 // Import the auth hook to get the current user
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/components/ui/use-toast"
+import { countries } from "@/lib/countries"
 
 type DisplaySupplierData = {
   id?: string;
@@ -51,6 +52,7 @@ type DisplaySupplierData = {
     reach: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
   };
   recommendations: string[];
+  countryScore?: number; // Optional for backward compatibility
 }
 
 interface SupplierDossierProps {
@@ -74,6 +76,8 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const [isAlreadyAdded, setIsAlreadyAdded] = useState(false)
   // Track loading state for the check
   const [checkingStatus, setCheckingStatus] = useState(false)
+  const [countryScore, setCountryScore] = useState<number | null>(null); // Change to null for initial state
+  const [isLoadingScore, setIsLoadingScore] = useState(false);
 
   // Mock document upload state for LkSG (would be fetched from server in production)
   const [lksgDocuments, setLksgDocuments] = useState<DocumentUploadType[]>([
@@ -189,16 +193,20 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     try {
       const { data, error } = await supabase
         .from('user_supplier_association')
-        .select('*')
+        .select('user, supplier')
         .eq('user', user.id)
         .eq('supplier', results.id)
-        .single()
+        .maybeSingle()
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error code
+      if (error && error.code !== 'PGRST116') {
         console.error('Error checking supplier association:', error)
+        toast({
+          title: "Error",
+          description: "Failed to check supplier status. Please try again.",
+          variant: "destructive"
+        })
       }
 
-      // If data exists, the supplier is already added
       setIsAlreadyAdded(!!data)
     } catch (error) {
       console.error('Unexpected error checking supplier association:', error)
@@ -292,6 +300,118 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     return Math.round(average);
   }
 
+  // Function to get country score (mock value for now)
+  const getCountryScore = async () => {
+    if (!results) return 0;
+    
+    try {
+      const { data: incidents, error } = await supabase
+        .from('uhri_incidents')
+        .select('countries')
+      
+      if (error) {
+        console.error('Error fetching incidents:', error);
+        return 50;
+      }
+
+      const countryIncidents: { [key: string]: number } = {};
+      let totalIncidents = 0;
+
+      incidents.forEach(incident => {
+        if (Array.isArray(incident.countries)) {
+          incident.countries.forEach((country: string) => {
+            countryIncidents[country] = (countryIncidents[country] || 0) + 1;
+            totalIncidents++;
+          });
+        }
+      });
+
+      const countryRatios = Object.entries(countryIncidents).map(([country, count]) => ({
+        country,
+        ratio: count / totalIncidents
+      }));
+
+      const ratios = countryRatios.map(c => c.ratio);
+      const minRatio = Math.min(...ratios);
+      const maxRatio = Math.max(...ratios);
+
+      const ourCountry = results.country;
+      const ourRatio = countryIncidents[ourCountry] ? countryIncidents[ourCountry] / totalIncidents : 0;
+      const score = maxRatio === minRatio ? 50 :
+        Math.round(100 - ((ourRatio - minRatio) / (maxRatio - minRatio)) * 100);
+
+      return score;
+    } catch (error) {
+      console.error('Error calculating country score:', error);
+      return 50;
+    }
+  };
+
+  // Helper function to get country code
+  const getCountryCode = (countryName: string) => {
+    const countryCodeMap: { [key: string]: string } = {
+      "Afghanistan": "af", "Albania": "al", "Algeria": "dz", "Andorra": "ad", "Angola": "ao",
+      "Antigua and Barbuda": "ag", "Argentina": "ar", "Armenia": "am", "Australia": "au",
+      "Austria": "at", "Azerbaijan": "az", "Bahamas": "bs", "Bahrain": "bh", "Bangladesh": "bd",
+      "Barbados": "bb", "Belarus": "by", "Belgium": "be", "Belize": "bz", "Benin": "bj",
+      "Bhutan": "bt", "Bolivia": "bo", "Bosnia and Herzegovina": "ba", "Botswana": "bw",
+      "Brazil": "br", "Brunei": "bn", "Bulgaria": "bg", "Burkina Faso": "bf", "Burundi": "bi",
+      "Cabo Verde": "cv", "Cambodia": "kh", "Cameroon": "cm", "Canada": "ca",
+      "Central African Republic": "cf", "Chad": "td", "Chile": "cl", "China": "cn",
+      "Colombia": "co", "Comoros": "km", "Congo": "cg",
+      "Congo, Democratic Republic of the": "cd", "Costa Rica": "cr", "Côte d'Ivoire": "ci",
+      "Croatia": "hr", "Cuba": "cu", "Cyprus": "cy", "Czech Republic": "cz", "Denmark": "dk",
+      "Djibouti": "dj", "Dominica": "dm", "Dominican Republic": "do", "Ecuador": "ec",
+      "Egypt": "eg", "El Salvador": "sv", "Equatorial Guinea": "gq", "Eritrea": "er",
+      "Estonia": "ee", "Eswatini": "sz", "Ethiopia": "et", "Fiji": "fj", "Finland": "fi",
+      "France": "fr", "Gabon": "ga", "Gambia": "gm", "Georgia": "ge", "Germany": "de",
+      "Ghana": "gh", "Greece": "gr", "Grenada": "gd", "Guatemala": "gt", "Guinea": "gn",
+      "Guinea-Bissau": "gw", "Guyana": "gy", "Haiti": "ht", "Honduras": "hn", "Hungary": "hu",
+      "Iceland": "is", "India": "in", "Indonesia": "id", "Iran": "ir", "Iraq": "iq",
+      "Ireland": "ie", "Israel": "il", "Italy": "it", "Jamaica": "jm", "Japan": "jp",
+      "Jordan": "jo", "Kazakhstan": "kz", "Kenya": "ke", "Kiribati": "ki",
+      "Korea, North": "kp", "Korea, South": "kr", "Kuwait": "kw", "Kyrgyzstan": "kg",
+      "Laos": "la", "Latvia": "lv", "Lebanon": "lb", "Lesotho": "ls", "Liberia": "lr",
+      "Libya": "ly", "Liechtenstein": "li", "Lithuania": "lt", "Luxembourg": "lu",
+      "Madagascar": "mg", "Malawi": "mw", "Malaysia": "my", "Maldives": "mv", "Mali": "ml",
+      "Malta": "mt", "Marshall Islands": "mh", "Mauritania": "mr", "Mauritius": "mu",
+      "Mexico": "mx", "Micronesia": "fm", "Moldova": "md", "Monaco": "mc", "Mongolia": "mn",
+      "Montenegro": "me", "Morocco": "ma", "Mozambique": "mz", "Myanmar": "mm",
+      "Namibia": "na", "Nauru": "nr", "Nepal": "np", "Netherlands": "nl", "New Zealand": "nz",
+      "Nicaragua": "ni", "Niger": "ne", "Nigeria": "ng", "North Macedonia": "mk",
+      "Norway": "no", "Oman": "om", "Pakistan": "pk", "Palau": "pw", "Panama": "pa",
+      "Papua New Guinea": "pg", "Paraguay": "py", "Peru": "pe", "Philippines": "ph",
+      "Poland": "pl", "Portugal": "pt", "Qatar": "qa", "Romania": "ro", "Russia": "ru",
+      "Rwanda": "rw", "Saint Kitts and Nevis": "kn", "Saint Lucia": "lc",
+      "Saint Vincent and the Grenadines": "vc", "Samoa": "ws", "San Marino": "sm",
+      "Sao Tome and Principe": "st", "Saudi Arabia": "sa", "Senegal": "sn", "Serbia": "rs",
+      "Seychelles": "sc", "Sierra Leone": "sl", "Singapore": "sg", "Slovakia": "sk",
+      "Slovenia": "si", "Solomon Islands": "sb", "Somalia": "so", "South Africa": "za",
+      "South Sudan": "ss", "Spain": "es", "Sri Lanka": "lk", "Sudan": "sd", "Suriname": "sr",
+      "Sweden": "se", "Switzerland": "ch", "Syria": "sy", "Taiwan": "tw", "Tajikistan": "tj",
+      "Tanzania": "tz", "Thailand": "th", "Timor-Leste": "tl", "Togo": "tg", "Tonga": "to",
+      "Trinidad and Tobago": "tt", "Tunisia": "tn", "Turkey": "tr", "Turkmenistan": "tm",
+      "Tuvalu": "tv", "Uganda": "ug", "Ukraine": "ua", "United Arab Emirates": "ae",
+      "United Kingdom": "gb", "United States": "us", "Uruguay": "uy", "Uzbekistan": "uz",
+      "Vanuatu": "vu", "Vatican City": "va", "Venezuela": "ve", "Vietnam": "vn",
+      "Yemen": "ye", "Zambia": "zm", "Zimbabwe": "zw"
+    };
+    
+    // Return the country code if found, otherwise return a default
+    return countryCodeMap[countryName] || 'xx';
+  }
+
+  // Helper function to get country name (simplified since we only have the name)
+  const getCountryName = (countryValue: string) => {
+    // Find by exact match
+    const country = countries.find(c => 
+      c.toLowerCase() === countryValue.toLowerCase()
+    );
+    
+    // Return the proper name if found, otherwise the original value
+    return country || countryValue;
+  }
+
   // Handle file upload (mock implementation)
   const handleFileUpload = (documentIndex: number, documentType: 'lksg' | 'csrd' | 'cbam' | 'reach') => {
     // In a real implementation, this would trigger a file upload dialog and upload to server
@@ -357,18 +477,19 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     }
 
     try {
-      // Insert a record into the user_supplier_association table
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_supplier_association')
         .insert([
           { 
             user: user.id, 
-            supplier: results.id 
+            supplier: results.id,
+            created_at: new Date().toISOString()
           }
         ])
+        .select('user, supplier')
+        .single()
       
       if (error) {
-        // Check if it's a duplicate entry error
         if (error.code === '23505') {
           toast({
             title: "Already added",
@@ -381,7 +502,6 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
         throw error
       }
       
-      // Update the state to reflect that the supplier is now added
       setIsAlreadyAdded(true)
       
       toast({
@@ -419,18 +539,18 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     }
 
     try {
-      // Delete the record from the user_supplier_association table
       const { error } = await supabase
         .from('user_supplier_association')
         .delete()
         .eq('user', user.id)
         .eq('supplier', results.id)
+        .select('user, supplier')
+        .single()
       
       if (error) {
         throw error
       }
       
-      // Update the state to reflect that the supplier is now removed
       setIsAlreadyAdded(false)
       
       toast({
@@ -455,6 +575,19 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
       addToMySuppliers()
     }
   }
+
+  // Update the useEffect to handle loading state
+  useEffect(() => {
+    const loadCountryScore = async () => {
+      if (results) {
+        setIsLoadingScore(true);
+        const score = await getCountryScore();
+        setCountryScore(score);
+        setIsLoadingScore(false);
+      }
+    };
+    loadCountryScore();
+  }, [results]);
 
   return (
     <div className="space-y-6">
@@ -488,7 +621,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
           <Tabs defaultValue="main" className="w-full">
             <TabsList className="w-full border-b">
               <TabsTrigger value="main" className="flex-1">Main</TabsTrigger>
-              <TabsTrigger value="lksg" className="flex-1">German Supply Chain Act (LkSG)</TabsTrigger>
+              <TabsTrigger value="lksg" className="flex-1">Supply Chain Due Diligence Act</TabsTrigger>
               <TabsTrigger value="csrd" className="flex-1">CSRD</TabsTrigger>
               <TabsTrigger value="cbam" className="flex-1">CBAM</TabsTrigger>
               <TabsTrigger value="reach" className="flex-1">REACH</TabsTrigger>
@@ -573,7 +706,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <Card>
                             <CardHeader className="pb-2">
-                              <CardTitle className="text-base">German Supply Chain Act (LkSG)</CardTitle>
+                              <CardTitle className="text-base">Supply Chain Due Diligence Act</CardTitle>
                             </CardHeader>
                             <CardContent>
                               <div className="flex items-center justify-between">
@@ -689,19 +822,96 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Country Score Card */}
+                  <Card className="mt-6">
+                    <CardHeader>
+                      <CardTitle>Country Score</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center pt-6">
+                      <div className="flex items-center mb-4">
+                        <div className="w-10 h-6 mr-3 rounded overflow-hidden border border-slate-200">
+                          <img 
+                            src={`https://flagcdn.com/w80/${getCountryCode(results?.country || '')}.png`} 
+                            alt={`${getCountryName(results?.country || '')} flag`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="text-lg font-medium">{getCountryName(results?.country || '')}</span>
+                      </div>
+                      <div className="relative w-32 h-32">
+                        {isLoadingScore ? (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-500"></div>
+                          </div>
+                        ) : countryScore !== null ? (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <circle 
+                                cx="50" 
+                                cy="50" 
+                                r="45" 
+                                fill="none" 
+                                stroke="#e2e8f0" 
+                                strokeWidth="10" 
+                              />
+                              <circle 
+                                cx="50" 
+                                cy="50" 
+                                r="45" 
+                                fill="none" 
+                                stroke={
+                                  countryScore >= 75 ? "#10b981" : 
+                                  countryScore >= 50 ? "#f59e0b" : 
+                                  "#ef4444"
+                                } 
+                                strokeWidth="10" 
+                                strokeDasharray={`${countryScore * 2.83} 283`} 
+                                strokeDashoffset="0" 
+                                strokeLinecap="round" 
+                                transform="rotate(-90 50 50)" 
+                              />
+                            </svg>
+                            <div className="absolute text-3xl font-bold">
+                              {countryScore}%
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="mt-4 text-center">
+                        <h3 className="text-sm font-medium mb-2">Country Risk Rating</h3>
+                        {isLoadingScore ? (
+                          <Badge variant="outline">Calculating...</Badge>
+                        ) : countryScore !== null ? (
+                          <Badge 
+                            className={`
+                              ${countryScore >= 75 ? "bg-emerald-100 text-emerald-800" : 
+                                countryScore >= 50 ? "bg-amber-100 text-amber-800" : 
+                                "bg-red-100 text-red-800"} 
+                              px-3 py-1
+                            `}
+                          >
+                            {countryScore >= 75 ? "Low Risk" : 
+                              countryScore >= 50 ? "Medium Risk" : 
+                              "High Risk"}
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </TabsContent>
 
-            {/* German Supply Chain Act (LkSG) Tab Content */}
+            {/* Supply Chain Due Diligence Act Tab Content */}
             <TabsContent value="lksg">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
                   <Card>
                     <CardHeader>
-                      <CardTitle>German Supply Chain Act (LkSG)</CardTitle>
+                      <CardTitle>Supply Chain Due Diligence Act</CardTitle>
                       <CardDescription>
-                        The German Act on Corporate Due Diligence Obligations in Supply Chains has been in force since January 1, 2023. 
+                        The Supply Chain Due Diligence Act has been in force since January 1, 2023. 
                         It initially applied to companies with at least 3,000 employees in Germany and expanded to those with at least 1,000 employees from 2024.
                       </CardDescription>
                     </CardHeader>
