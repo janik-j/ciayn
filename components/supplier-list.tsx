@@ -16,6 +16,7 @@ import {
   Building,
   MapPin,
   Users,
+  AlertTriangle,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -43,16 +44,18 @@ type Supplier = {
   }
 }
 
-export function SupplierList() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+export function SupplierList({ initialData = [] }: { initialData?: Supplier[] }) {
+  const [suppliers, setSuppliers] = useState<Supplier[]>(initialData)
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [refreshingIds, setRefreshingIds] = useState<string[]>([])
 
-  // Simulate fetching suppliers on component mount
+  // Only fetch suppliers if no initial data was provided
   useEffect(() => {
-    fetchSuppliers()
-  }, [])
+    if (initialData.length === 0) {
+      fetchSuppliers()
+    }
+  }, [initialData])
 
   // Filter suppliers based on search term
   const filteredSuppliers = suppliers.filter(
@@ -62,169 +65,67 @@ export function SupplierList() {
       supplier.country.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  // Simulate fetching suppliers
-  const fetchSuppliers = () => {
+  // Fetching suppliers from API
+  const fetchSuppliers = async () => {
     setIsLoading(true)
 
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setSuppliers([
-        {
-          id: "1",
-          name: "Acme Manufacturing",
-          industry: "Manufacturing",
-          country: "United States",
-          employees: 1250,
-          website: "https://acme-example.com",
-          lastUpdated: "2024-03-10",
-          esgRisk: {
-            environmental: "Medium",
-            social: "Low",
-            governance: "Medium",
-            overall: "Medium",
-          },
-          complianceStatus: {
-            lksg: "Partially Compliant",
-            cbam: "Unknown",
-            csdd: "Partially Compliant",
-            csrd: "Non-Compliant",
-            reach: "Partially Compliant",
-          },
-        },
-        {
-          id: "2",
-          name: "EcoTech Solutions",
-          industry: "Technology",
-          country: "Germany",
-          employees: 850,
-          website: "https://ecotech-example.de",
-          lastUpdated: "2024-03-12",
-          esgRisk: {
-            environmental: "Low",
-            social: "Low",
-            governance: "Low",
-            overall: "Low",
-          },
-          complianceStatus: {
-            lksg: "Compliant",
-            cbam: "Compliant",
-            csdd: "Compliant",
-            csrd: "Compliant",
-            reach: "Compliant",
-          },
-        },
-        {
-          id: "3",
-          name: "Global Textiles Ltd",
-          industry: "Textiles",
-          country: "Bangladesh",
-          employees: 3500,
-          website: "https://globaltextiles-example.com",
-          lastUpdated: "2024-03-05",
-          esgRisk: {
-            environmental: "Medium",
-            social: "High",
-            governance: "Medium",
-            overall: "High",
-          },
-          complianceStatus: {
-            lksg: "Non-Compliant",
-            cbam: "Partially Compliant",
-            csdd: "Non-Compliant",
-            csrd: "Non-Compliant",
-            reach: "Unknown",
-          },
-        },
-        {
-          id: "4",
-          name: "Nordic Timber",
-          industry: "Forestry",
-          country: "Sweden",
-          employees: 620,
-          website: "https://nordictimber-example.se",
-          lastUpdated: "2024-03-08",
-          esgRisk: {
-            environmental: "Low",
-            social: "Low",
-            governance: "Medium",
-            overall: "Low",
-          },
-          complianceStatus: {
-            lksg: "Compliant",
-            cbam: "Compliant",
-            csdd: "Compliant",
-            csrd: "Partially Compliant",
-            reach: "Compliant",
-          },
-        },
-        {
-          id: "5",
-          name: "Sunshine Electronics",
-          industry: "Electronics",
-          country: "China",
-          employees: 5200,
-          website: "https://sunshine-example.cn",
-          lastUpdated: "2024-03-01",
-          esgRisk: {
-            environmental: "High",
-            social: "Medium",
-            governance: "Medium",
-            overall: "High",
-          },
-          complianceStatus: {
-            lksg: "Partially Compliant",
-            cbam: "Non-Compliant",
-            csdd: "Partially Compliant",
-            csrd: "Unknown",
-            reach: "Non-Compliant",
-          },
-        },
-      ])
+    try {
+      // Try to fetch from our API endpoint
+      const response = await fetch('/api/suppliers')
+      
+      if (response.ok) {
+        const { data } = await response.json()
+        setSuppliers(data)
+      } else {
+        console.error('Error fetching suppliers:', response.statusText)
+        setSuppliers([]) // Set empty array on error
+      }
+    } catch (error) {
+      console.error('Error fetching suppliers:', error)
+      setSuppliers([]) // Set empty array on error
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
-  // Simulate refreshing a single supplier's risk assessment
-  const refreshSupplier = (id: string) => {
+  // Refresh a supplier's risk assessment - update using API
+  const refreshSupplier = async (id: string) => {
     setRefreshingIds((prev) => [...prev, id])
 
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setSuppliers((prev) =>
-        prev.map((supplier) => {
-          if (supplier.id === id) {
-            // Randomly update the risk levels to simulate real-time changes
-            const riskLevels: Array<"Low" | "Medium" | "High"> = ["Low", "Medium", "High"]
-            const randomRisk = () => riskLevels[Math.floor(Math.random() * riskLevels.length)]
+    try {
+      // Call our API endpoint
+      const response = await fetch('/api/suppliers', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id }),
+      })
 
-            const environmental = randomRisk()
-            const social = randomRisk()
-            const governance = randomRisk()
-
-            // Determine overall risk (highest of the three)
-            let overall: "Low" | "Medium" | "High" = "Low"
-            if (environmental === "High" || social === "High" || governance === "High") {
-              overall = "High"
-            } else if (environmental === "Medium" || social === "Medium" || governance === "Medium") {
-              overall = "Medium"
+      if (response.ok) {
+        const { data } = await response.json()
+        
+        // Update the supplier in our local state
+        setSuppliers((prev) =>
+          prev.map((supplier) => {
+            if (supplier.id === id) {
+              return {
+                ...supplier,
+                lastUpdated: data.lastUpdated,
+                esgRisk: data.esgRisk,
+              }
             }
-
-            return {
-              ...supplier,
-              lastUpdated: new Date().toISOString().split("T")[0],
-              esgRisk: {
-                environmental,
-                social,
-                governance,
-                overall,
-              },
-            }
-          }
-          return supplier
-        }),
-      )
+            return supplier
+          }),
+        )
+      } else {
+        console.error('Failed to refresh supplier')
+      }
+    } catch (error) {
+      console.error('Error refreshing supplier:', error)
+    } finally {
       setRefreshingIds((prev) => prev.filter((item) => item !== id))
-    }, 1500)
+    }
   }
 
   // Get color for risk level
@@ -300,6 +201,18 @@ export function SupplierList() {
         <div className="flex justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
         </div>
+      ) : suppliers.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+            <h3 className="text-lg font-medium text-slate-700 mb-1">No supplier data available</h3>
+            <p className="text-sm text-slate-500 mb-4">There was an error loading suppliers from the database</p>
+            <Button onClick={fetchSuppliers}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       ) : filteredSuppliers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">

@@ -12,12 +12,6 @@ export default function Home() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-slate-800">Supplier Risk Analysis</h1>
           <div className="flex gap-3">
-            <Link href="/examples" passHref>
-              <Button variant="outline">
-                <Database className="mr-2 h-4 w-4" />
-                Example Data
-              </Button>
-            </Link>
             <Link href="/suppliers" passHref>
               <Button variant="outline">
                 <ListFilter className="mr-2 h-4 w-4" />

@@ -24,137 +24,171 @@ import Link from "next/link"
 export function SupplierDetail({ id }: { id: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [supplier, setSupplier] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate API call to fetch supplier details
-    setIsLoading(true)
-    setTimeout(() => {
-      // Mock data based on the ID
-      const mockSuppliers = {
-        "1": {
-          id: "1",
-          name: "Acme Manufacturing",
-          industry: "Manufacturing",
-          country: "United States",
-          employees: 1250,
-          website: "https://acme-example.com",
-          lastUpdated: "2024-03-10",
-          esgRisk: {
-            environmental: "Medium",
-            social: "Low",
-            governance: "Medium",
-          },
-          redFlags: [
-            "Fined for pollution violation (Texas, Jan 2024)",
-            "No human rights policy found online",
-            "Limited transparency in supply chain documentation",
-          ],
-          complianceStatus: {
-            lksg: "Partially Compliant",
-            cbam: "Unknown",
-            csdd: "Partially Compliant",
-            csrd: "Non-Compliant",
-            reach: "Partially Compliant",
-          },
-          recommendations: [
-            "Request updated Environmental Policy and Human Rights Policy",
-            "Conduct supplier audit focused on environmental compliance",
-            "Require carbon emissions data for CBAM compliance assessment",
-          ],
-        },
-        "2": {
-          id: "2",
-          name: "EcoTech Solutions",
-          industry: "Technology",
-          country: "Germany",
-          employees: 850,
-          website: "https://ecotech-example.de",
-          lastUpdated: "2024-03-12",
-          esgRisk: {
-            environmental: "Low",
-            social: "Low",
-            governance: "Low",
-          },
-          redFlags: [],
-          complianceStatus: {
-            lksg: "Compliant",
-            cbam: "Compliant",
-            csdd: "Compliant",
-            csrd: "Compliant",
-            reach: "Compliant",
-          },
-          recommendations: [
-            "Maintain current compliance documentation",
-            "Consider publishing sustainability report publicly",
-          ],
-        },
-        "3": {
-          id: "3",
-          name: "Global Textiles Ltd",
-          industry: "Textiles",
-          country: "Bangladesh",
-          employees: 3500,
-          website: "https://globaltextiles-example.com",
-          lastUpdated: "2024-03-05",
-          esgRisk: {
-            environmental: "Medium",
-            social: "High",
-            governance: "Medium",
-          },
-          redFlags: [
-            "Labor rights violations reported (2023)",
-            "Factory safety concerns identified",
-            "No environmental policy available",
-            "Child labor allegations in supply chain",
-          ],
-          complianceStatus: {
-            lksg: "Non-Compliant",
-            cbam: "Partially Compliant",
-            csdd: "Non-Compliant",
-            csrd: "Non-Compliant",
-            reach: "Unknown",
-          },
-          recommendations: [
-            "Immediate audit of labor practices required",
-            "Develop comprehensive human rights policy",
-            "Implement factory safety improvements",
-            "Create environmental management system",
-          ],
-        },
-      }
-
-      // Get the supplier data or default to a generic one if ID not found
-      setSupplier(
-        mockSuppliers[id as keyof typeof mockSuppliers] || {
-          id: id,
-          name: "Unknown Supplier",
-          industry: "Not specified",
-          country: "Not specified",
-          employees: 0,
-          website: "#",
-          lastUpdated: "Never",
-          esgRisk: {
-            environmental: "Unknown",
-            social: "Unknown",
-            governance: "Unknown",
-          },
-          redFlags: ["No data available"],
-          complianceStatus: {
-            lksg: "Unknown",
-            cbam: "Unknown",
-            csdd: "Unknown",
-            csrd: "Unknown",
-            reach: "Unknown",
-          },
-          recommendations: ["Request basic company information"],
-        },
-      )
-
-      setIsLoading(false)
-    }, 1000)
+    fetchSupplierData()
   }, [id])
 
-  const getRiskColor = (risk: "Low" | "Medium" | "High") => {
+  const fetchSupplierData = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Fetch from our specific supplier API endpoint
+      const response = await fetch(`/api/suppliers/${id}`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch supplier: ${response.statusText}`)
+      }
+
+      const { data } = await response.json()
+      
+      if (data) {
+        // Add default red flags and recommendations
+        const enhancedSupplier = {
+          ...data,
+          redFlags: generateRedFlags(data),
+          recommendations: generateRecommendations(data),
+        }
+        
+        setSupplier(enhancedSupplier)
+      } else {
+        throw new Error('Supplier data not found')
+      }
+    } catch (error) {
+      console.error('Error fetching supplier data:', error)
+      setError('Failed to load supplier data')
+      
+      // Instead of mock data, create a generic error state
+      setSupplier({
+        id: id,
+        name: "Data Loading Error",
+        industry: "Not available",
+        country: "Not available",
+        employees: 0,
+        website: "#",
+        lastUpdated: "Never",
+        esgRisk: {
+          environmental: "Unknown",
+          social: "Unknown",
+          governance: "Unknown",
+          overall: "Unknown"
+        },
+        redFlags: ["Connection error - unable to load supplier data"],
+        complianceStatus: {
+          lksg: "Unknown",
+          cbam: "Unknown",
+          csdd: "Unknown",
+          csrd: "Unknown",
+          reach: "Unknown"
+        },
+        recommendations: ["Check connection and try again", "Contact support if the issue persists"]
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Generate red flags based on supplier data
+  const generateRedFlags = (supplier: any) => {
+    const redFlags = []
+    
+    // Check if this is a new supplier with little data
+    if (supplier.industry === 'Not specified' || 
+        supplier.country === 'Not specified' || 
+        supplier.employees === 0) {
+      redFlags.push("Supplier data incomplete - basic company information missing")
+    }
+    
+    // High ESG risk areas
+    if (supplier.esgRisk.environmental === "High") {
+      redFlags.push("High environmental risk detected")
+    }
+    if (supplier.esgRisk.social === "High") {
+      redFlags.push("High social risk detected")
+    }
+    if (supplier.esgRisk.governance === "High") {
+      redFlags.push("High governance risk detected")
+    }
+    
+    // If all ESG risks are unknown
+    if (supplier.esgRisk.environmental === "Unknown" && 
+        supplier.esgRisk.social === "Unknown" && 
+        supplier.esgRisk.governance === "Unknown") {
+      redFlags.push("ESG risk assessment missing - request data from supplier")
+    }
+    
+    // Non-compliant status for key regulations
+    if (supplier.complianceStatus.lksg === "Non-Compliant") {
+      redFlags.push("Non-compliant with LkSG requirements")
+    }
+    if (supplier.complianceStatus.csdd === "Non-Compliant") {
+      redFlags.push("Non-compliant with CSDD requirements")
+    }
+    
+    // Countries with higher risk
+    const highRiskCountries = ["Bangladesh", "Myanmar", "Cambodia", "China"]
+    if (highRiskCountries.includes(supplier.country)) {
+      redFlags.push(`High-risk country: ${supplier.country}`)
+    }
+    
+    // If no red flags were found, add a default one for incomplete data
+    if (redFlags.length === 0 && 
+        Object.values(supplier.complianceStatus).every(status => status === 'Unknown')) {
+      redFlags.push("Compliance status unknown - assessment required")
+    }
+    
+    return redFlags.length > 0 ? redFlags : ["No significant risks identified"];
+  }
+  
+  // Generate recommendations based on supplier data
+  const generateRecommendations = (supplier: any) => {
+    const recommendations = []
+    
+    // Recommendations for incomplete data
+    if (supplier.industry === 'Not specified' || 
+        supplier.country === 'Not specified' || 
+        supplier.employees === 0) {
+      recommendations.push("Collect basic supplier information (industry, country, size)")
+    }
+    
+    // Recommendations based on ESG risk
+    if (supplier.esgRisk.environmental === "High" || supplier.esgRisk.environmental === "Medium") {
+      recommendations.push("Conduct environmental compliance audit")
+    }
+    if (supplier.esgRisk.social === "High" || supplier.esgRisk.social === "Medium") {
+      recommendations.push("Implement social compliance monitoring")
+    }
+    if (supplier.esgRisk.governance === "High" || supplier.esgRisk.governance === "Medium") {
+      recommendations.push("Request governance documentation")
+    }
+    
+    // If all ESG risks are unknown
+    if (supplier.esgRisk.environmental === "Unknown" && 
+        supplier.esgRisk.social === "Unknown" && 
+        supplier.esgRisk.governance === "Unknown") {
+      recommendations.push("Perform initial ESG risk assessment")
+    }
+    
+    // Recommendations based on compliance status
+    if (supplier.complianceStatus.lksg !== "Compliant") {
+      recommendations.push("Perform LkSG compliance assessment")
+    }
+    if (supplier.complianceStatus.cbam === "Unknown") {
+      recommendations.push("Request carbon emissions data for CBAM")
+    }
+    
+    // For new suppliers with unknown compliance
+    if (Object.values(supplier.complianceStatus).every(status => status === 'Unknown')) {
+      recommendations.push("Request compliance self-assessment questionnaire")
+      recommendations.push("Schedule initial supplier compliance screening")
+    }
+    
+    return recommendations.length > 0 ? recommendations : ["Maintain current documentation and monitoring"];
+  }
+
+  const getRiskColor = (risk: string) => {
     switch (risk) {
       case "Low":
         return "bg-emerald-500"
@@ -162,12 +196,13 @@ export function SupplierDetail({ id }: { id: string }) {
         return "bg-amber-500"
       case "High":
         return "bg-red-500"
+      case "Unknown":
       default:
         return "bg-slate-300"
     }
   }
 
-  const getComplianceColor = (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => {
+  const getComplianceColor = (status: string) => {
     switch (status) {
       case "Compliant":
         return "bg-emerald-100 text-emerald-800 border-emerald-200"
@@ -176,13 +211,12 @@ export function SupplierDetail({ id }: { id: string }) {
       case "Non-Compliant":
         return "bg-red-100 text-red-800 border-red-200"
       case "Unknown":
-        return "bg-slate-100 text-slate-800 border-slate-200"
       default:
         return "bg-slate-100 text-slate-800 border-slate-200"
     }
   }
 
-  const getRiskProgress = (risk: "Low" | "Medium" | "High") => {
+  const getRiskProgress = (risk: string) => {
     switch (risk) {
       case "Low":
         return 33
@@ -190,6 +224,7 @@ export function SupplierDetail({ id }: { id: string }) {
         return 66
       case "High":
         return 100
+      case "Unknown":
       default:
         return 0
     }
