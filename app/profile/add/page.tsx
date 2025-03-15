@@ -24,7 +24,7 @@ export default function AddSupplierPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-            <Link href="/suppliers" passHref>
+            <Link href="/my-suppliers" passHref>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Suppliers

@@ -79,7 +79,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
 
     try {
       // Try to fetch from our API endpoint
-      const response = await fetch('/api/suppliers')
+      const response = await fetch('/api/my-suppliers')
       
       if (response.ok) {
         const { data } = await response.json()
@@ -102,7 +102,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
 
     try {
       // Call our API endpoint
-      const response = await fetch('/api/suppliers', {
+      const response = await fetch('/api/my-suppliers', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

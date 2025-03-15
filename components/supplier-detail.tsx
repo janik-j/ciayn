@@ -36,7 +36,7 @@ export function SupplierDetail({ id }: { id: string }) {
 
     try {
       // Fetch from our specific supplier API endpoint
-      const response = await fetch(`/api/suppliers/${id}`)
+      const response = await fetch(`/api/my-suppliers/${id}`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch supplier: ${response.statusText}`)
@@ -241,7 +241,7 @@ export function SupplierDetail({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Link href="/suppliers">
+        <Link href="/my-suppliers">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Suppliers

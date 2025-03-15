@@ -48,13 +48,13 @@ export function Header() {
         <nav>
           <ul className="flex items-center gap-6">
             <li>
-              <Link href="/" className="text-slate-600 hover:text-emerald-600 text-sm font-medium">
-                Dashboard
+              <Link href="/explore" className="text-slate-600 hover:text-emerald-600 text-sm font-medium">
+                Explore
               </Link>
             </li>
             <li>
-              <Link href="/suppliers" className="text-slate-600 hover:text-emerald-600 text-sm font-medium">
-                Suppliers
+              <Link href="/my-suppliers" className="text-slate-600 hover:text-emerald-600 text-sm font-medium">
+                My Suppliers
               </Link>
             </li>
             <li>

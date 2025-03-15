@@ -32,7 +32,7 @@ interface Supplier {
 }
 
 // This is a server component that fetches data
-export default async function SuppliersPage() {
+export default async function MySuppliersPage() {
   // Fetch suppliers
   const { data: suppliers, error: suppliersError } = await supabase
     .from('suppliers')
@@ -103,7 +103,7 @@ export default async function SuppliersPage() {
       <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-slate-800">Suppliers</h1>
+          <h1 className="text-3xl font-bold text-slate-800">My Suppliers</h1>
         </div>
         
         <SupplierListPage initialSuppliers={formattedSuppliers} />

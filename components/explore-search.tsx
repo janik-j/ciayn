@@ -8,7 +8,7 @@ import { Search, Loader2 } from "lucide-react"
 import { searchSuppliers } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
-export function DashboardSearch() {
+export function ExploreSearch() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const router = useRouter()
