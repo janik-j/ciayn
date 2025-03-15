@@ -7,7 +7,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Upload, AlertTriangle, CheckCircle, FileText, Globe, Building, MapPin, Users } from "lucide-react"
+import { 
+  Upload, 
+  AlertTriangle, 
+  CheckCircle, 
+  FileText, 
+  Globe, 
+  Building, 
+  MapPin, 
+  Users, 
+  AlertCircle,
+  Info,
+  Database,
+  Newspaper
+} from "lucide-react"
 import { CompanySearch } from "./company-search"
 import { NewsFeedAnalyzer } from "./news-feed-analyzer"
 import { useRouter } from "next/navigation"
@@ -44,6 +57,13 @@ interface SupplierDossierProps {
   initialData?: DisplaySupplierData;
 }
 
+type DocumentUploadType = {
+  name: string;
+  description: string;
+  status: "Required" | "Recommended";
+  uploaded: boolean;
+};
+
 export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const [results, setResults] = useState<DisplaySupplierData | null>(initialData || null)
   const router = useRouter()
@@ -54,6 +74,112 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const [isAlreadyAdded, setIsAlreadyAdded] = useState(false)
   // Track loading state for the check
   const [checkingStatus, setCheckingStatus] = useState(false)
+
+  // Mock document upload state for LkSG (would be fetched from server in production)
+  const [lksgDocuments, setLksgDocuments] = useState<DocumentUploadType[]>([
+    {
+      name: "Human Rights Policy",
+      description: "Required as part of the due diligence framework.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Environmental Policy",
+      description: "Required as the Act explicitly covers environmental due diligence.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Annual Risk Analysis & Due Diligence Report",
+      description: "Companies must produce annual reports on due diligence obligations.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Complaints Procedure Documentation",
+      description: "The Act explicitly makes complaint procedures mandatory.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Supplier Code of Conduct/Audit Reports",
+      description: "Practical tools to fulfill the mandatory due diligence obligations.",
+      status: "Recommended",
+      uploaded: false
+    }
+  ]);
+
+  // Mock document upload state for CSRD
+  const [csrdDocuments, setCsrdDocuments] = useState<DocumentUploadType[]>([
+    {
+      name: "Annual Sustainability Report (ESRS-compliant)",
+      description: "Required for applicable companies based on size and timeline. Companies must report according to European Sustainability Reporting Standards.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Double Materiality Assessment",
+      description: "Required as part of ESRS 2 General Disclosures. Companies must conduct a materiality analysis to determine which additional content needs reporting.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Climate Transition Plan",
+      description: "May be required as part of specific sector disclosures depending on materiality assessment outcomes.",
+      status: "Recommended",
+      uploaded: false
+    }
+  ]);
+
+  // Mock document upload state for CBAM
+  const [cbamDocuments, setCbamDocuments] = useState<DocumentUploadType[]>([
+    {
+      name: "Carbon Emissions Reports",
+      description: "Required quarterly during the transition period (October 1, 2023, to December 31, 2025) for importers of covered goods.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Emissions Calculation Documentation",
+      description: "Since August 1, 2024, it has become mandatory to use the methods defined by the CBAM Regulation for determining emissions.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Supplier Emissions Verification",
+      description: "Having verification processes is pragmatic given that from 2026, CBAM certificates for all embedded emissions will be necessary.",
+      status: "Recommended",
+      uploaded: false
+    }
+  ]);
+
+  // Mock document upload state for REACH
+  const [reachDocuments, setReachDocuments] = useState<DocumentUploadType[]>([
+    {
+      name: "Substance Registration Documentation",
+      description: "REACH requires registration of substances manufactured or imported in quantities of 1 tonne or more per year.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Safety Data Sheets (SDS)",
+      description: "Required for hazardous substances and mixtures to communicate information on hazards and safe handling.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Authorization Documentation",
+      description: "Required for substances of very high concern (SVHCs) listed in Annex XIV of REACH.",
+      status: "Required",
+      uploaded: false
+    },
+    {
+      name: "Supply Chain Communication Records",
+      description: "Documentation of information exchange with suppliers and customers about substances in products.",
+      status: "Recommended",
+      uploaded: false
+    }
+  ]);
 
   // Check if the supplier is already in the user's list
   const checkIfAlreadyAdded = async () => {
@@ -136,23 +262,83 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     }
   }
 
-  const getRiskProgress = (risk: "Low" | "Medium" | "High") => {
-    switch (risk) {
-      case "Low":
-        return 33
-      case "Medium":
-        return 66
-      case "High":
-        return 100
+  const getComplianceScore = (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => {
+    switch (status) {
+      case "Compliant":
+        return 100;
+      case "Partially Compliant":
+        return 50;
+      case "Non-Compliant":
+        return 0;
+      case "Unknown":
+        return 25;
       default:
-        return 0
+        return 0;
+    }
+  }
+
+  const getTotalComplianceScore = () => {
+    if (!results) return 0;
+    
+    const scores = [
+      getComplianceScore(results.complianceStatus.lksg),
+      getComplianceScore(results.complianceStatus.csrd),
+      getComplianceScore(results.complianceStatus.cbam),
+      getComplianceScore(results.complianceStatus.reach),
+      getComplianceScore(results.complianceStatus.csdd)
+    ];
+    
+    const average = scores.reduce((a, b) => a + b, 0) / scores.length;
+    return Math.round(average);
+  }
+
+  // Handle file upload (mock implementation)
+  const handleFileUpload = (documentIndex: number, documentType: 'lksg' | 'csrd' | 'cbam' | 'reach') => {
+    // In a real implementation, this would trigger a file upload dialog and upload to server
+    // For now, we'll just toggle the uploaded state
+    switch (documentType) {
+      case 'lksg':
+        const updatedLksgDocuments = [...lksgDocuments];
+        updatedLksgDocuments[documentIndex].uploaded = true;
+        setLksgDocuments(updatedLksgDocuments);
+        toast({
+          title: "Document uploaded",
+          description: `${lksgDocuments[documentIndex].name} has been successfully uploaded.`,
+        });
+        break;
+      case 'csrd':
+        const updatedCsrdDocuments = [...csrdDocuments];
+        updatedCsrdDocuments[documentIndex].uploaded = true;
+        setCsrdDocuments(updatedCsrdDocuments);
+        toast({
+          title: "Document uploaded",
+          description: `${csrdDocuments[documentIndex].name} has been successfully uploaded.`,
+        });
+        break;
+      case 'cbam':
+        const updatedCbamDocuments = [...cbamDocuments];
+        updatedCbamDocuments[documentIndex].uploaded = true;
+        setCbamDocuments(updatedCbamDocuments);
+        toast({
+          title: "Document uploaded",
+          description: `${cbamDocuments[documentIndex].name} has been successfully uploaded.`,
+        });
+        break;
+      case 'reach':
+        const updatedReachDocuments = [...reachDocuments];
+        updatedReachDocuments[documentIndex].uploaded = true;
+        setReachDocuments(updatedReachDocuments);
+        toast({
+          title: "Document uploaded",
+          description: `${reachDocuments[documentIndex].name} has been successfully uploaded.`,
+        });
+        break;
     }
   }
 
   // Function to add the supplier to the user's suppliers
   const addToMySuppliers = async () => {
     if (!user) {
-      // This shouldn't happen since the button won't be shown if the user isn't logged in
       toast({
         title: "Not logged in",
         description: "You need to be logged in to add suppliers.",
@@ -202,9 +388,6 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
         title: "Success",
         description: `${results.name} has been added to your suppliers.`,
       })
-      
-      // Optionally redirect to my-suppliers page
-      // router.push('/my-suppliers')
     } catch (error) {
       console.error("Error adding supplier:", error)
       toast({
@@ -278,13 +461,13 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
       {!results ? (
         <CompanySearch onCompanyFound={handleCompanyFound} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="md:col-span-2">
+        <div>
+          <Card className="mb-6">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle>{results.name}</CardTitle>
-                  <CardDescription>ESG risk assessment and compliance status</CardDescription>
+                  <CardDescription>Supplier Assessment and Compliance</CardDescription>
                 </div>
                 {user && (
                   <Button 
@@ -300,282 +483,844 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                 )}
               </div>
             </CardHeader>
-            <CardContent>
-              {/* Company Information Section */}
-              <div className="mb-6 p-4 bg-slate-50 rounded-lg">
-                <h3 className="text-sm font-medium mb-3">Company Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-slate-400" />
-                    <div>
-                      <p className="text-xs text-slate-500">Branche</p>
-                      <p className="text-sm font-medium">{results.industry}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-slate-400" />
-                    <div>
-                      <p className="text-xs text-slate-500">Land</p>
-                      <p className="text-sm font-medium">{results.country}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-slate-400" />
-                    <div>
-                      <p className="text-xs text-slate-500">Anzahl Mitarbeiter</p>
-                      <p className="text-sm font-medium">{results.employees}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-slate-400" />
-                    <div>
-                      <p className="text-xs text-slate-500">Website</p>
-                      <a
-                        href={results.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
-                      >
-                        {results.website}
-                      </a>
-                    </div>
-                  </div>
+          </Card>
+
+          <Tabs defaultValue="main" className="w-full">
+            <TabsList className="w-full border-b">
+              <TabsTrigger value="main" className="flex-1">Main</TabsTrigger>
+              <TabsTrigger value="lksg" className="flex-1">German Supply Chain Act (LkSG)</TabsTrigger>
+              <TabsTrigger value="csrd" className="flex-1">CSRD</TabsTrigger>
+              <TabsTrigger value="cbam" className="flex-1">CBAM</TabsTrigger>
+              <TabsTrigger value="reach" className="flex-1">REACH</TabsTrigger>
+              <TabsTrigger value="news" className="flex-1">News/AI</TabsTrigger>
+            </TabsList>
+
+            {/* Main Tab Content */}
+            <TabsContent value="main">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Company Information Card */}
+                <div className="md:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Company Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="p-4 bg-slate-50 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="text-xs text-slate-500">Industry</p>
+                              <p className="text-sm font-medium">{results.industry}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="text-xs text-slate-500">Country</p>
+                              <p className="text-sm font-medium">{results.country}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="text-xs text-slate-500">Employees</p>
+                              <p className="text-sm font-medium">{results.employees}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="text-xs text-slate-500">Website</p>
+                              <a
+                                href={results.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                              >
+                                {results.website}
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6">
+                        <h3 className="text-sm font-medium mb-3">Red Flags</h3>
+                        <div className="space-y-2">
+                          {results.redFlags.length > 0 ? (
+                            results.redFlags.map((flag, index) => (
+                              <Alert key={index}>
+                                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                <AlertTitle className="ml-2 text-sm font-medium">Risk Identified</AlertTitle>
+                                <AlertDescription className="ml-2 text-sm">{flag}</AlertDescription>
+                              </Alert>
+                            ))
+                          ) : (
+                            <Alert>
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              <AlertTitle className="ml-2 text-sm font-medium">No Risks Identified</AlertTitle>
+                              <AlertDescription className="ml-2 text-sm">
+                                No significant red flags have been identified for this supplier.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-6">
+                        <h3 className="text-sm font-medium mb-3">Compliance Overview</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">German Supply Chain Act (LkSG)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex items-center justify-between">
+                                <Badge className={getComplianceColor(results.complianceStatus.lksg)}>
+                                  {results.complianceStatus.lksg}
+                                </Badge>
+                                <Progress value={getComplianceScore(results.complianceStatus.lksg)} className="w-24 h-2" />
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">CSRD</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex items-center justify-between">
+                                <Badge className={getComplianceColor(results.complianceStatus.csrd)}>
+                                  {results.complianceStatus.csrd}
+                                </Badge>
+                                <Progress value={getComplianceScore(results.complianceStatus.csrd)} className="w-24 h-2" />
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">CBAM</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex items-center justify-between">
+                                <Badge className={getComplianceColor(results.complianceStatus.cbam)}>
+                                  {results.complianceStatus.cbam}
+                                </Badge>
+                                <Progress value={getComplianceScore(results.complianceStatus.cbam)} className="w-24 h-2" />
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">REACH</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex items-center justify-between">
+                                <Badge className={getComplianceColor(results.complianceStatus.reach)}>
+                                  {results.complianceStatus.reach}
+                                </Badge>
+                                <Progress value={getComplianceScore(results.complianceStatus.reach)} className="w-24 h-2" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* Total Score Card */}
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Compliance Score</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center pt-6">
+                      <div className="relative w-48 h-48">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg viewBox="0 0 100 100" className="w-full h-full">
+                            <circle 
+                              cx="50" 
+                              cy="50" 
+                              r="45" 
+                              fill="none" 
+                              stroke="#e2e8f0" 
+                              strokeWidth="10" 
+                            />
+                            <circle 
+                              cx="50" 
+                              cy="50" 
+                              r="45" 
+                              fill="none" 
+                              stroke={
+                                getTotalComplianceScore() >= 75 ? "#10b981" : 
+                                getTotalComplianceScore() >= 50 ? "#f59e0b" : 
+                                "#ef4444"
+                              } 
+                              strokeWidth="10" 
+                              strokeDasharray={`${getTotalComplianceScore() * 2.83} 283`} 
+                              strokeDashoffset="0" 
+                              strokeLinecap="round" 
+                              transform="rotate(-90 50 50)" 
+                            />
+                          </svg>
+                          <div className="absolute text-4xl font-bold">
+                            {getTotalComplianceScore()}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-6 text-center">
+                        <h3 className="text-sm font-medium mb-2">Overall Rating</h3>
+                        <Badge 
+                          className={`
+                            ${getTotalComplianceScore() >= 75 ? "bg-emerald-100 text-emerald-800" : 
+                              getTotalComplianceScore() >= 50 ? "bg-amber-100 text-amber-800" : 
+                              "bg-red-100 text-red-800"} 
+                            px-3 py-1
+                          `}
+                        >
+                          {getTotalComplianceScore() >= 75 ? "Good" : 
+                            getTotalComplianceScore() >= 50 ? "Needs Improvement" : 
+                            "At Risk"}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
+            </TabsContent>
 
-              <Tabs defaultValue="risk" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="risk">ESG Risk</TabsTrigger>
-                  <TabsTrigger value="compliance">Compliance</TabsTrigger>
-                  <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="risk" className="space-y-4 pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-sm font-medium">Environmental</h3>
-                        <Badge className={`${getRiskColor(results.esgRisk.environmental)} text-white`}>
-                          {results.esgRisk.environmental}
-                        </Badge>
-                      </div>
-                      <Progress value={getRiskProgress(results.esgRisk.environmental)} className="h-2" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-sm font-medium">Social</h3>
-                        <Badge className={`${getRiskColor(results.esgRisk.social)} text-white`}>
-                          {results.esgRisk.social}
-                        </Badge>
-                      </div>
-                      <Progress value={getRiskProgress(results.esgRisk.social)} className="h-2" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-sm font-medium">Governance</h3>
-                        <Badge className={`${getRiskColor(results.esgRisk.governance)} text-white`}>
-                          {results.esgRisk.governance}
-                        </Badge>
-                      </div>
-                      <Progress value={getRiskProgress(results.esgRisk.governance)} className="h-2" />
-                    </div>
-
-
-                  </div>
-                  <div className="pt-4">
-                    <NewsFeedAnalyzer companyName={results.name} industry={results.industry} />
-                  </div>
-                  <div className="pt-4">
-                    <h3 className="text-sm font-medium mb-2">Red Flags</h3>
-                    <div className="space-y-2">
-                      {results.redFlags.length > 0 ? (
-                        results.redFlags.map((flag, index) => (
-                          <Alert key={index}>
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            <AlertTitle className="ml-2 text-sm font-medium">Risk Identified</AlertTitle>
-                            <AlertDescription className="ml-2 text-sm">{flag}</AlertDescription>
-                          </Alert>
-                        ))
-                      ) : (
-                        <Alert>
-                          <CheckCircle className="h-4 w-4 text-emerald-500" />
-                          <AlertTitle className="ml-2 text-sm font-medium">No Risks Identified</AlertTitle>
-                          <AlertDescription className="ml-2 text-sm">
-                            No significant red flags have been identified for this supplier.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="compliance" className="space-y-4 pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">German Supply Chain Act (LkSG)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
+            {/* German Supply Chain Act (LkSG) Tab Content */}
+            <TabsContent value="lksg">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>German Supply Chain Act (LkSG)</CardTitle>
+                      <CardDescription>
+                        The German Act on Corporate Due Diligence Obligations in Supply Chains has been in force since January 1, 2023. 
+                        It initially applied to companies with at least 3,000 employees in Germany and expanded to those with at least 1,000 employees from 2024.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-6">
+                        <h3 className="text-sm font-medium mb-3">Compliance Status</h3>
+                        <div className="flex items-center gap-3">
                           <Badge className={getComplianceColor(results.complianceStatus.lksg)}>
                             {results.complianceStatus.lksg}
                           </Badge>
-                          {results.complianceStatus.lksg === "Compliant" ? (
-                            <CheckCircle className="h-5 w-5 text-emerald-500" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                          )}
+                          <Progress 
+                            value={getComplianceScore(results.complianceStatus.lksg)} 
+                            className="flex-1 h-2"
+                          />
+                          <span className="text-sm font-medium">
+                            {getComplianceScore(results.complianceStatus.lksg)}%
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
 
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Carbon Border Adjustment Mechanism (CBAM)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <Badge className={getComplianceColor(results.complianceStatus.cbam)}>
-                            {results.complianceStatus.cbam}
-                          </Badge>
-                          {results.complianceStatus.cbam === "Compliant" ? (
-                            <CheckCircle className="h-5 w-5 text-emerald-500" />
-                          ) : results.complianceStatus.cbam === "Unknown" ? (
-                            <FileText className="h-5 w-5 text-slate-400" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                          )}
+                      <div className="space-y-4">
+                        <Alert>
+                          <Info className="h-4 w-4 text-blue-500" />
+                          <AlertTitle className="ml-2 text-sm font-medium">Regulation Overview</AlertTitle>
+                          <AlertDescription className="ml-2 text-sm">
+                            This legislation establishes mandatory human rights and environmental due diligence requirements along the entire supply chain. Companies must establish risk management systems, analyze human rights risks, and implement preventive measures.
+                          </AlertDescription>
+                        </Alert>
+
+                        <h3 className="text-sm font-medium pt-2">Required Documentation</h3>
+                        <div className="space-y-3">
+                          {lksgDocuments.map((doc, index) => (
+                            <div 
+                              key={index}
+                              className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-slate-400" />
+                                  <h4 className="font-medium">{doc.name}</h4>
+                                  <Badge variant="outline" className="ml-2">
+                                    {doc.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-slate-500 mt-1">{doc.description}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {doc.uploaded ? (
+                                  <>
+                                    <Badge className="bg-emerald-100 text-emerald-800">Uploaded</Badge>
+                                    <Button variant="outline" size="sm">
+                                      View
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleFileUpload(index, 'lksg')}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    Upload
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Corporate Sustainability Due Diligence (CSDD)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <Badge className={getComplianceColor(results.complianceStatus.csdd)}>
-                            {results.complianceStatus.csdd}
-                          </Badge>
-                          {results.complianceStatus.csdd === "Compliant" ? (
-                            <CheckCircle className="h-5 w-5 text-emerald-500" />
-                          ) : results.complianceStatus.csdd === "Unknown" ? (
-                            <FileText className="h-5 w-5 text-slate-400" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                          )}
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Upload Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-sm font-medium">Documentation Completeness</h3>
+                            <span className="text-sm font-medium">
+                              {lksgDocuments.filter(doc => doc.uploaded).length}/{lksgDocuments.length}
+                            </span>
+                          </div>
+                          <Progress 
+                            value={lksgDocuments.filter(doc => doc.uploaded).length / lksgDocuments.length * 100} 
+                            className="h-2"
+                          />
                         </div>
-                      </CardContent>
-                    </Card>
 
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Corporate Sustainability Reporting (CSRD)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Required Documents</h3>
+                          <div className="space-y-2">
+                            {lksgDocuments
+                              .filter(doc => doc.status === "Required")
+                              .map((doc, index) => (
+                                <div 
+                                  key={index} 
+                                  className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm"
+                                >
+                                  <span>{doc.name}</span>
+                                  {doc.uploaded ? (
+                                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                  ) : (
+                                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                                  )}
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Next Steps</h3>
+                          <ul className="space-y-2 text-sm">
+                            {lksgDocuments.some(doc => doc.status === "Required" && !doc.uploaded) && (
+                              <li className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                                <span>Upload all required documents to improve compliance</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.lksg === "Partially Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                                <span>Schedule risk assessment to identify improvement areas</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.lksg === "Non-Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+                                <span>Urgent action required - engage with supplier immediately</span>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* CSRD Tab Content - Now with document uploads */}
+            <TabsContent value="csrd">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Corporate Sustainability Reporting Directive (CSRD)</CardTitle>
+                      <CardDescription>
+                        The CSRD introduces expanded sustainability reporting requirements with phased implementation starting in 2024 for certain companies.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-6">
+                        <h3 className="text-sm font-medium mb-3">Compliance Status</h3>
+                        <div className="flex items-center gap-3">
                           <Badge className={getComplianceColor(results.complianceStatus.csrd)}>
                             {results.complianceStatus.csrd}
                           </Badge>
-                          {results.complianceStatus.csrd === "Compliant" ? (
-                            <CheckCircle className="h-5 w-5 text-emerald-500" />
-                          ) : results.complianceStatus.csrd === "Unknown" ? (
-                            <FileText className="h-5 w-5 text-slate-400" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                          )}
+                          <Progress 
+                            value={getComplianceScore(results.complianceStatus.csrd)} 
+                            className="flex-1 h-2"
+                          />
+                          <span className="text-sm font-medium">
+                            {getComplianceScore(results.complianceStatus.csrd)}%
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
 
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">REACH (Chemical Regulation)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
+                      <div className="space-y-4">
+                        <Alert>
+                          <Info className="h-4 w-4 text-blue-500" />
+                          <AlertTitle className="ml-2 text-sm font-medium">Regulation Overview</AlertTitle>
+                          <AlertDescription className="ml-2 text-sm">
+                            The CSRD introduces a more detailed reporting requirement that requires companies to report according to mandatory European Sustainability Reporting Standards (ESRS). It covers environmental, social, governance, and human rights aspects.
+                          </AlertDescription>
+                        </Alert>
+
+                        <h3 className="text-sm font-medium pt-2">Required Documentation</h3>
+                        <div className="space-y-3">
+                          {csrdDocuments.map((doc, index) => (
+                            <div 
+                              key={index}
+                              className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-slate-400" />
+                                  <h4 className="font-medium">{doc.name}</h4>
+                                  <Badge variant="outline" className="ml-2">
+                                    {doc.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-slate-500 mt-1">{doc.description}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {doc.uploaded ? (
+                                  <>
+                                    <Badge className="bg-emerald-100 text-emerald-800">Uploaded</Badge>
+                                    <Button variant="outline" size="sm">
+                                      View
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleFileUpload(index, 'csrd')}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    Upload
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Upload Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-sm font-medium">Documentation Completeness</h3>
+                            <span className="text-sm font-medium">
+                              {csrdDocuments.filter(doc => doc.uploaded).length}/{csrdDocuments.length}
+                            </span>
+                          </div>
+                          <Progress 
+                            value={csrdDocuments.filter(doc => doc.uploaded).length / csrdDocuments.length * 100} 
+                            className="h-2"
+                          />
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Required Documents</h3>
+                          <div className="space-y-2">
+                            {csrdDocuments
+                              .filter(doc => doc.status === "Required")
+                              .map((doc, index) => (
+                                <div 
+                                  key={index} 
+                                  className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm"
+                                >
+                                  <span>{doc.name}</span>
+                                  {doc.uploaded ? (
+                                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                  ) : (
+                                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                                  )}
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Next Steps</h3>
+                          <ul className="space-y-2 text-sm">
+                            {csrdDocuments.some(doc => doc.status === "Required" && !doc.uploaded) && (
+                              <li className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                                <span>Upload all required documents to improve compliance</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.csrd === "Partially Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                                <span>Review Double Materiality Assessment to ensure all relevant aspects are covered</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.csrd === "Non-Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+                                <span>Urgent action required - CSRD compliance will be mandatory soon</span>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* CBAM Tab Content - Now with document uploads */}
+            <TabsContent value="cbam">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>EU Carbon Border Adjustment Mechanism (CBAM)</CardTitle>
+                      <CardDescription>
+                        CBAM is being phased in gradually to align with the phase-out of free allowances under the EU Emissions Trading System. It aims to prevent carbon leakage by ensuring importers from non-EU countries bear similar costs for greenhouse gas emissions.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-6">
+                        <h3 className="text-sm font-medium mb-3">Compliance Status</h3>
+                        <div className="flex items-center gap-3">
+                          <Badge className={getComplianceColor(results.complianceStatus.cbam)}>
+                            {results.complianceStatus.cbam}
+                          </Badge>
+                          <Progress 
+                            value={getComplianceScore(results.complianceStatus.cbam)} 
+                            className="flex-1 h-2"
+                          />
+                          <span className="text-sm font-medium">
+                            {getComplianceScore(results.complianceStatus.cbam)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <Alert>
+                          <Info className="h-4 w-4 text-blue-500" />
+                          <AlertTitle className="ml-2 text-sm font-medium">Regulation Overview</AlertTitle>
+                          <AlertDescription className="ml-2 text-sm">
+                            CBAM requires importers to purchase certificates corresponding to the embedded carbon emissions in their imported goods. It currently applies to cement, iron and steel, aluminium, fertilizers, electricity and hydrogen.
+                          </AlertDescription>
+                        </Alert>
+
+                        <h3 className="text-sm font-medium pt-2">Required Documentation</h3>
+                        <div className="space-y-3">
+                          {cbamDocuments.map((doc, index) => (
+                            <div 
+                              key={index}
+                              className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-slate-400" />
+                                  <h4 className="font-medium">{doc.name}</h4>
+                                  <Badge variant="outline" className="ml-2">
+                                    {doc.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-slate-500 mt-1">{doc.description}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {doc.uploaded ? (
+                                  <>
+                                    <Badge className="bg-emerald-100 text-emerald-800">Uploaded</Badge>
+                                    <Button variant="outline" size="sm">
+                                      View
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleFileUpload(index, 'cbam')}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    Upload
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Upload Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-sm font-medium">Documentation Completeness</h3>
+                            <span className="text-sm font-medium">
+                              {cbamDocuments.filter(doc => doc.uploaded).length}/{cbamDocuments.length}
+                            </span>
+                          </div>
+                          <Progress 
+                            value={cbamDocuments.filter(doc => doc.uploaded).length / cbamDocuments.length * 100} 
+                            className="h-2"
+                          />
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Required Documents</h3>
+                          <div className="space-y-2">
+                            {cbamDocuments
+                              .filter(doc => doc.status === "Required")
+                              .map((doc, index) => (
+                                <div 
+                                  key={index} 
+                                  className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm"
+                                >
+                                  <span>{doc.name}</span>
+                                  {doc.uploaded ? (
+                                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                  ) : (
+                                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                                  )}
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Next Steps</h3>
+                          <ul className="space-y-2 text-sm">
+                            {cbamDocuments.some(doc => doc.status === "Required" && !doc.uploaded) && (
+                              <li className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                                <span>Upload all required documents to improve compliance</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.cbam === "Partially Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                                <span>Review emissions calculation methods against CBAM requirements</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.cbam === "Non-Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+                                <span>Urgent action required - prepare for full CBAM implementation in 2026</span>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* REACH Tab Content - Now with document uploads */}
+            <TabsContent value="reach">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>EU REACH Regulation</CardTitle>
+                      <CardDescription>
+                        REACH (Registration, Evaluation, Authorization and Restriction of Chemicals) is a European Union regulation concerning chemicals and their safe use, which aims to improve the protection of human health and the environment.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-6">
+                        <h3 className="text-sm font-medium mb-3">Compliance Status</h3>
+                        <div className="flex items-center gap-3">
                           <Badge className={getComplianceColor(results.complianceStatus.reach)}>
                             {results.complianceStatus.reach}
                           </Badge>
-                          {results.complianceStatus.reach === "Compliant" ? (
-                            <CheckCircle className="h-5 w-5 text-emerald-500" />
-                          ) : results.complianceStatus.reach === "Unknown" ? (
-                            <FileText className="h-5 w-5 text-slate-400" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                          )}
+                          <Progress 
+                            value={getComplianceScore(results.complianceStatus.reach)} 
+                            className="flex-1 h-2"
+                          />
+                          <span className="text-sm font-medium">
+                            {getComplianceScore(results.complianceStatus.reach)}%
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
+                      </div>
 
-                <TabsContent value="recommendations" className="pt-4">
-                  <h3 className="text-sm font-medium mb-2">Recommended Actions</h3>
-                  <ul className="space-y-2">
-                    {results.recommendations.map((recommendation, index) => (
-                      <li key={index} className="flex items-start gap-2 p-3 bg-slate-50 rounded-md">
-                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">{recommendation}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                      <div className="space-y-4">
+                        <Alert>
+                          <Info className="h-4 w-4 text-blue-500" />
+                          <AlertTitle className="ml-2 text-sm font-medium">Regulation Overview</AlertTitle>
+                          <AlertDescription className="ml-2 text-sm">
+                            REACH places the responsibility on companies to manage the risks from chemicals and to provide safety information on the substances. Manufacturers and importers must register each substance manufactured or imported in quantities of 1 tonne or more per year.
+                          </AlertDescription>
+                        </Alert>
 
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Document Upload</CardTitle>
-                <CardDescription>Upload relevant supplier documents for analysis</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-center">
-                  <Upload className="h-10 w-10 text-slate-400 mb-2" />
-                  <h3 className="text-sm font-medium mb-1">Upload Documents</h3>
-                  <p className="text-xs text-slate-500 mb-4">Drag and drop files or click to browse</p>
-                  <Button variant="outline" size="sm">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Select Files
-                  </Button>
+                        <h3 className="text-sm font-medium pt-2">Required Documentation</h3>
+                        <div className="space-y-3">
+                          {reachDocuments.map((doc, index) => (
+                            <div 
+                              key={index}
+                              className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-slate-400" />
+                                  <h4 className="font-medium">{doc.name}</h4>
+                                  <Badge variant="outline" className="ml-2">
+                                    {doc.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-slate-500 mt-1">{doc.description}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {doc.uploaded ? (
+                                  <>
+                                    <Badge className="bg-emerald-100 text-emerald-800">Uploaded</Badge>
+                                    <Button variant="outline" size="sm">
+                                      View
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleFileUpload(index, 'reach')}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    Upload
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col items-start">
-                <h4 className="text-xs font-medium text-slate-500 mb-2">Suggested Documents</h4>
-                <ul className="space-y-2 w-full">
-                  <li className="text-xs flex items-center justify-between p-2 bg-slate-50 rounded">
-                    <span>Environmental Policy</span>
-                    <Badge variant="outline" className="text-xs">
-                      Required
-                    </Badge>
-                  </li>
-                  <li className="text-xs flex items-center justify-between p-2 bg-slate-50 rounded">
-                    <span>Human Rights Policy</span>
-                    <Badge variant="outline" className="text-xs">
-                      Required
-                    </Badge>
-                  </li>
-                  <li className="text-xs flex items-center justify-between p-2 bg-slate-50 rounded">
-                    <span>Carbon Emissions Report</span>
-                    <Badge variant="outline" className="text-xs">
-                      Recommended
-                    </Badge>
-                  </li>
-                  <li className="text-xs flex items-center justify-between p-2 bg-slate-50 rounded">
-                    <span>REACH Documentation</span>
-                    <Badge variant="outline" className="text-xs">
-                      Required
-                    </Badge>
-                  </li>
-                </ul>
-              </CardFooter>
-            </Card>
-          </div>
+
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Upload Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-sm font-medium">Documentation Completeness</h3>
+                            <span className="text-sm font-medium">
+                              {reachDocuments.filter(doc => doc.uploaded).length}/{reachDocuments.length}
+                            </span>
+                          </div>
+                          <Progress 
+                            value={reachDocuments.filter(doc => doc.uploaded).length / reachDocuments.length * 100} 
+                            className="h-2"
+                          />
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Required Documents</h3>
+                          <div className="space-y-2">
+                            {reachDocuments
+                              .filter(doc => doc.status === "Required")
+                              .map((doc, index) => (
+                                <div 
+                                  key={index} 
+                                  className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm"
+                                >
+                                  <span>{doc.name}</span>
+                                  {doc.uploaded ? (
+                                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                  ) : (
+                                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                                  )}
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Next Steps</h3>
+                          <ul className="space-y-2 text-sm">
+                            {reachDocuments.some(doc => doc.status === "Required" && !doc.uploaded) && (
+                              <li className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                                <span>Upload all required documents to improve compliance</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.reach === "Partially Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                                <span>Review Safety Data Sheets for compliance with updated requirements</span>
+                              </li>
+                            )}
+                            {results.complianceStatus.reach === "Non-Compliant" && (
+                              <li className="flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+                                <span>Urgent action required - non-compliance with REACH can result in market access restrictions</span>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* News/AI Tab Content */}
+            <TabsContent value="news">
+              <Card>
+                <CardHeader>
+                  <CardTitle>News & AI Analysis</CardTitle>
+                  <CardDescription>
+                    Real-time news analysis and AI-driven insights about {results.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NewsFeedAnalyzer companyName={results.name} industry={results.industry} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </div>
