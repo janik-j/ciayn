@@ -33,9 +33,16 @@ interface SuppliersListPageProps {
 }
 
 export function SupplierListPage({ initialSuppliers }: SuppliersListPageProps) {
+  // Debug information
+  console.log("SupplierListPage received initialSuppliers:", initialSuppliers);
+  console.log("initialSuppliers length:", initialSuppliers?.length || 0);
+  
+  // Make sure we always pass an array to SupplierList
+  const safeSuppliers = Array.isArray(initialSuppliers) ? initialSuppliers : [];
+  
   return (
     <div className="space-y-6">
-      <SupplierList initialData={initialSuppliers} />
+      <SupplierList initialData={safeSuppliers} />
     </div>
   )
 } 

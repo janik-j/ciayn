@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,7 +12,10 @@ import { CompanySearch } from "./company-search"
 import { NewsFeedAnalyzer } from "./news-feed-analyzer"
 import { useRouter } from "next/navigation"
 // Use type from our client
-import { SupplierData } from "@/lib/supabase/client"
+import { SupplierData, supabase } from "@/lib/supabase/client"
+// Import the auth hook to get the current user
+import { useAuth } from "@/hooks/useAuth"
+import { useToast } from "@/components/ui/use-toast"
 
 type DisplaySupplierData = {
   id?: string;
@@ -44,6 +47,46 @@ interface SupplierDossierProps {
 export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const [results, setResults] = useState<DisplaySupplierData | null>(initialData || null)
   const router = useRouter()
+  // Get the current user from the auth hook
+  const { user } = useAuth()
+  const { toast } = useToast()
+  // Track if the supplier is already added to the user's list
+  const [isAlreadyAdded, setIsAlreadyAdded] = useState(false)
+  // Track loading state for the check
+  const [checkingStatus, setCheckingStatus] = useState(false)
+
+  // Check if the supplier is already in the user's list
+  const checkIfAlreadyAdded = async () => {
+    if (!user || !results?.id) return
+
+    setCheckingStatus(true)
+    try {
+      const { data, error } = await supabase
+        .from('user_supplier_association')
+        .select('*')
+        .eq('user', user.id)
+        .eq('supplier', results.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error code
+        console.error('Error checking supplier association:', error)
+      }
+
+      // If data exists, the supplier is already added
+      setIsAlreadyAdded(!!data)
+    } catch (error) {
+      console.error('Unexpected error checking supplier association:', error)
+    } finally {
+      setCheckingStatus(false)
+    }
+  }
+
+  // Check if supplier is already added when component mounts or when user/results change
+  useEffect(() => {
+    if (user && results?.id) {
+      checkIfAlreadyAdded()
+    }
+  }, [user, results])
 
   const handleCompanyFound = (companyData: DisplaySupplierData) => {
     // If we're on the supplier detail page, redirect to profile
@@ -106,6 +149,130 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     }
   }
 
+  // Function to add the supplier to the user's suppliers
+  const addToMySuppliers = async () => {
+    if (!user) {
+      // This shouldn't happen since the button won't be shown if the user isn't logged in
+      toast({
+        title: "Not logged in",
+        description: "You need to be logged in to add suppliers.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!results?.id) {
+      toast({
+        title: "Error",
+        description: "Supplier information is incomplete.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      // Insert a record into the user_supplier_association table
+      const { data, error } = await supabase
+        .from('user_supplier_association')
+        .insert([
+          { 
+            user: user.id, 
+            supplier: results.id 
+          }
+        ])
+      
+      if (error) {
+        // Check if it's a duplicate entry error
+        if (error.code === '23505') {
+          toast({
+            title: "Already added",
+            description: `${results.name} is already in your suppliers list.`,
+            variant: "default"
+          })
+          setIsAlreadyAdded(true)
+          return
+        }
+        throw error
+      }
+      
+      // Update the state to reflect that the supplier is now added
+      setIsAlreadyAdded(true)
+      
+      toast({
+        title: "Success",
+        description: `${results.name} has been added to your suppliers.`,
+      })
+      
+      // Optionally redirect to my-suppliers page
+      // router.push('/my-suppliers')
+    } catch (error) {
+      console.error("Error adding supplier:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add supplier. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Function to remove the supplier from the user's suppliers
+  const removeFromMySuppliers = async () => {
+    if (!user) {
+      toast({
+        title: "Not logged in",
+        description: "You need to be logged in to remove suppliers.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!results?.id) {
+      toast({
+        title: "Error",
+        description: "Supplier information is incomplete.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      // Delete the record from the user_supplier_association table
+      const { error } = await supabase
+        .from('user_supplier_association')
+        .delete()
+        .eq('user', user.id)
+        .eq('supplier', results.id)
+      
+      if (error) {
+        throw error
+      }
+      
+      // Update the state to reflect that the supplier is now removed
+      setIsAlreadyAdded(false)
+      
+      toast({
+        title: "Success",
+        description: `${results.name} has been removed from your suppliers.`,
+      })
+    } catch (error) {
+      console.error("Error removing supplier:", error)
+      toast({
+        title: "Error",
+        description: "Failed to remove supplier. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Handle button click based on current state
+  const handleSupplierButtonClick = () => {
+    if (isAlreadyAdded) {
+      removeFromMySuppliers()
+    } else {
+      addToMySuppliers()
+    }
+  }
+
   return (
     <div className="space-y-6">
       {!results ? (
@@ -116,12 +283,21 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Supplier Profile: {results.name}</CardTitle>
+                  <CardTitle>{results.name}</CardTitle>
                   <CardDescription>ESG risk assessment and compliance status</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleNewSearch}>
-                  New Search
-                </Button>
+                {user && (
+                  <Button 
+                    variant="outline"
+                    size="sm" 
+                    onClick={handleSupplierButtonClick}
+                    disabled={checkingStatus}
+                    className={isAlreadyAdded ? "text-black-500 hover:text-red-600" : ""}
+                  >
+                    {checkingStatus ? 'Checking...' : 
+                     isAlreadyAdded ? 'Remove from My Suppliers' : 'Add to My Suppliers'}
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -398,24 +574,6 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                   </li>
                 </ul>
               </CardFooter>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Documents</CardTitle>
-                <CardDescription>Upload optional supporting documents</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-center">
-                  <Upload className="h-10 w-10 text-slate-400 mb-2" />
-                  <h3 className="text-sm font-medium mb-1">Upload Optional Documents</h3>
-                  <p className="text-xs text-slate-500 mb-4">Add any additional supporting documentation</p>
-                  <Button variant="outline" size="sm">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Select Files
-                  </Button>
-                </div>
-              </CardContent>
             </Card>
           </div>
         </div>
