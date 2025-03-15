@@ -8,8 +8,8 @@ import { User } from '@supabase/supabase-js'
 type AuthContextType = {
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string, redirectTo?: string) => Promise<void>
+  signUp: (email: string, password: string, redirectTo?: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -32,28 +32,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router])
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string, redirectTo: string = '/') => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    router.push('/profile')
+    router.push(redirectTo)
   }, [router])
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string, redirectTo: string = '/') => {
     const { error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
-    router.push('/profile')
+    router.push(redirectTo)
   }, [router])
 
   const signOut = useCallback(async () => {
     try {
+      // First initiate the navigation
+      router.push('/');
+      
+      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut()
       if (error) throw error
+      
+      // Finally set user to null after navigation has started
       setUser(null)
-      // Let the component handle navigation
     } catch (error) {
       throw error
     }
-  }, [])
+  }, [router])
 
   return (
     <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>

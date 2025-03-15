@@ -7,6 +7,7 @@ export async function POST(request: Request) {
     const email = formData.get("email") as string
     const password = formData.get("password") as string
     const confirmPassword = formData.get("confirmPassword") as string
+    const redirectTo = formData.get("redirectTo") as string || "/"
 
     if (password !== confirmPassword) {
       return NextResponse.json(
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.redirect(new URL("/profile", request.url))
+    return NextResponse.redirect(new URL(redirectTo, request.url))
   } catch (error) {
     return NextResponse.json(
       { error: "Internal server error" },

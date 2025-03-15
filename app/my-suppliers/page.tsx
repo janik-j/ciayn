@@ -71,7 +71,7 @@ export default function MySuppliersPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login')
+      router.push('/login?redirectTo=/my-suppliers')
     }
   }, [user, loading, router])
 

@@ -8,10 +8,13 @@ import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { FormEvent } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import { useSearchParams } from 'next/navigation'
 
 export default function RegisterPage() {
   const { signUp } = useAuth()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/'
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -30,7 +33,7 @@ export default function RegisterPage() {
     }
 
     try {
-      await signUp(email, password)
+      await signUp(email, password, redirectTo)
       toast({
         title: "Registration successful",
         description: "Your account has been created successfully.",
@@ -77,7 +80,7 @@ export default function RegisterPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href={`/login${redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`} className="text-primary hover:underline">
               Login
             </Link>
           </div>

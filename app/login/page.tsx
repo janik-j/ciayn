@@ -8,10 +8,13 @@ import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { FormEvent } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
   const { signIn } = useAuth()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/'
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -20,7 +23,7 @@ export default function LoginPage() {
     const password = formData.get("password") as string
 
     try {
-      await signIn(email, password)
+      await signIn(email, password, redirectTo)
       toast({
         title: "Logged in successfully",
         description: "Welcome back!",

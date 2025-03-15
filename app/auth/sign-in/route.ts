@@ -6,6 +6,7 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+    const redirectTo = formData.get("redirectTo") as string || "/"
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.redirect(new URL("/profile", request.url))
+    return NextResponse.redirect(new URL(redirectTo, request.url))
   } catch (error) {
     return NextResponse.json(
       { error: "Internal server error" },

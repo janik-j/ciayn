@@ -2,7 +2,7 @@
 
 import { Shield, User } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,12 +19,11 @@ export function Header() {
   const { user, signOut } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
+  const pathname = usePathname()
 
   const handleSignOut = useCallback(async () => {
     try {
       await signOut()
-      // Navigate after signout is complete
-      router.push('/')
     } catch (error) {
       console.error('Error signing out:', error)
       toast({
@@ -33,7 +32,7 @@ export function Header() {
         description: "There was a problem signing you out. Please try again.",
       })
     }
-  }, [signOut, toast, router])
+  }, [signOut, toast])
 
   return (
     <header className="bg-white border-b border-slate-200 py-4 px-6 shadow-sm">
@@ -98,12 +97,12 @@ export function Header() {
             ) : (
               <>
                 <li>
-                  <Link href="/login" passHref>
+                  <Link href={`/login?redirectTo=${encodeURIComponent(pathname)}`} passHref>
                     <Button variant="ghost">Login</Button>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/register" passHref>
+                  <Link href={`/register?redirectTo=${encodeURIComponent(pathname)}`} passHref>
                     <Button>Register</Button>
                   </Link>
                 </li>
