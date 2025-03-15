@@ -9,6 +9,11 @@ import { CompanySearch } from "./company-search"
 import { SupplierData, supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/components/ui/use-toast"
+import { countries } from "@/lib/countries"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Alert, AlertTitle } from "@/components/ui/alert"
+import { Info } from "lucide-react"
 
 // Import tab components from supplier-tabs directory
 import {
@@ -259,6 +264,130 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     }
   }
 
+  // Function to get country score based on incident ratios
+  const getCountryScore = async () => {
+    if (!results) return 0;
+    
+    try {
+      const { data: incidents, error } = await supabase
+        .from('uhri_incidents')
+        .select('countries')
+      
+      if (error) {
+        console.error('Error fetching incidents:', error);
+        return 50;
+      }
+
+      const countryIncidents: { [key: string]: number } = {};
+      let totalCountryOccurrences = 0;
+
+      incidents.forEach(incident => {
+        if (Array.isArray(incident.countries)) {
+          incident.countries.forEach((country: string) => {
+            countryIncidents[country] = (countryIncidents[country] || 0) + 1;
+            totalCountryOccurrences++;
+          });
+        }
+      });
+
+      // Sum all country occurrences (which should match totalCountryOccurrences)
+      const totalCountryOccurrencesSum = Object.values(countryIncidents).reduce((sum, count) => sum + count, 0);
+
+      const countryRatios = Object.entries(countryIncidents).map(([country, count]) => ({
+        country,
+        ratio: count / totalCountryOccurrencesSum
+      }));
+
+      const ratios = countryRatios.map(c => c.ratio);
+      const minRatio = Math.min(...ratios);
+      const maxRatio = Math.max(...ratios);
+
+      const ourCountry = results.country;
+      const ourRatio = countryIncidents[ourCountry] ? countryIncidents[ourCountry] / totalCountryOccurrencesSum : 0;
+      
+      // Handle edge cases and ensure score is between 0 and 100
+      let score;
+      if (maxRatio === minRatio) {
+        score = 50; // Default score when all countries have the same ratio
+      } else {
+        // Linear interpolation: min ratio maps to 100, max ratio maps to 0
+        score = Math.round(100 - ((ourRatio - minRatio) / (maxRatio - minRatio)) * 100);
+        // Ensure the score is within 0-100 range
+        score = Math.max(0, Math.min(100, score));
+      }
+
+      return score;
+    } catch (error) {
+      console.error('Error calculating country score:', error);
+      return 50;
+    }
+  };
+
+  // Helper function to get country code
+  const getCountryCode = (countryName: string) => {
+    const countryCodeMap: { [key: string]: string } = {
+      "Afghanistan": "af", "Albania": "al", "Algeria": "dz", "Andorra": "ad", "Angola": "ao",
+      "Antigua and Barbuda": "ag", "Argentina": "ar", "Armenia": "am", "Australia": "au",
+      "Austria": "at", "Azerbaijan": "az", "Bahamas": "bs", "Bahrain": "bh", "Bangladesh": "bd",
+      "Barbados": "bb", "Belarus": "by", "Belgium": "be", "Belize": "bz", "Benin": "bj",
+      "Bhutan": "bt", "Bolivia": "bo", "Bosnia and Herzegovina": "ba", "Botswana": "bw",
+      "Brazil": "br", "Brunei": "bn", "Bulgaria": "bg", "Burkina Faso": "bf", "Burundi": "bi",
+      "Cabo Verde": "cv", "Cambodia": "kh", "Cameroon": "cm", "Canada": "ca",
+      "Central African Republic": "cf", "Chad": "td", "Chile": "cl", "China": "cn",
+      "Colombia": "co", "Comoros": "km", "Congo": "cg",
+      "Congo, Democratic Republic of the": "cd", "Costa Rica": "cr", "Côte d'Ivoire": "ci",
+      "Croatia": "hr", "Cuba": "cu", "Cyprus": "cy", "Czech Republic": "cz", "Denmark": "dk",
+      "Djibouti": "dj", "Dominica": "dm", "Dominican Republic": "do", "Ecuador": "ec",
+      "Egypt": "eg", "El Salvador": "sv", "Equatorial Guinea": "gq", "Eritrea": "er",
+      "Estonia": "ee", "Eswatini": "sz", "Ethiopia": "et", "Fiji": "fj", "Finland": "fi",
+      "France": "fr", "Gabon": "ga", "Gambia": "gm", "Georgia": "ge", "Germany": "de",
+      "Ghana": "gh", "Greece": "gr", "Grenada": "gd", "Guatemala": "gt", "Guinea": "gn",
+      "Guinea-Bissau": "gw", "Guyana": "gy", "Haiti": "ht", "Honduras": "hn", "Hungary": "hu",
+      "Iceland": "is", "India": "in", "Indonesia": "id", "Iran": "ir", "Iraq": "iq",
+      "Ireland": "ie", "Israel": "il", "Italy": "it", "Jamaica": "jm", "Japan": "jp",
+      "Jordan": "jo", "Kazakhstan": "kz", "Kenya": "ke", "Kiribati": "ki",
+      "Korea, North": "kp", "Korea, South": "kr", "Kuwait": "kw", "Kyrgyzstan": "kg",
+      "Laos": "la", "Latvia": "lv", "Lebanon": "lb", "Lesotho": "ls", "Liberia": "lr",
+      "Libya": "ly", "Liechtenstein": "li", "Lithuania": "lt", "Luxembourg": "lu",
+      "Madagascar": "mg", "Malawi": "mw", "Malaysia": "my", "Maldives": "mv", "Mali": "ml",
+      "Malta": "mt", "Marshall Islands": "mh", "Mauritania": "mr", "Mauritius": "mu",
+      "Mexico": "mx", "Micronesia": "fm", "Moldova": "md", "Monaco": "mc", "Mongolia": "mn",
+      "Montenegro": "me", "Morocco": "ma", "Mozambique": "mz", "Myanmar": "mm",
+      "Namibia": "na", "Nauru": "nr", "Nepal": "np", "Netherlands": "nl", "New Zealand": "nz",
+      "Nicaragua": "ni", "Niger": "ne", "Nigeria": "ng", "North Macedonia": "mk",
+      "Norway": "no", "Oman": "om", "Pakistan": "pk", "Palau": "pw", "Panama": "pa",
+      "Papua New Guinea": "pg", "Paraguay": "py", "Peru": "pe", "Philippines": "ph",
+      "Poland": "pl", "Portugal": "pt", "Qatar": "qa", "Romania": "ro", "Russia": "ru",
+      "Rwanda": "rw", "Saint Kitts and Nevis": "kn", "Saint Lucia": "lc",
+      "Saint Vincent and the Grenadines": "vc", "Samoa": "ws", "San Marino": "sm",
+      "Sao Tome and Principe": "st", "Saudi Arabia": "sa", "Senegal": "sn", "Serbia": "rs",
+      "Seychelles": "sc", "Sierra Leone": "sl", "Singapore": "sg", "Slovakia": "sk",
+      "Slovenia": "si", "Solomon Islands": "sb", "Somalia": "so", "South Africa": "za",
+      "South Sudan": "ss", "Spain": "es", "Sri Lanka": "lk", "Sudan": "sd", "Suriname": "sr",
+      "Sweden": "se", "Switzerland": "ch", "Syria": "sy", "Taiwan": "tw", "Tajikistan": "tj",
+      "Tanzania": "tz", "Thailand": "th", "Timor-Leste": "tl", "Togo": "tg", "Tonga": "to",
+      "Trinidad and Tobago": "tt", "Tunisia": "tn", "Turkey": "tr", "Turkmenistan": "tm",
+      "Tuvalu": "tv", "Uganda": "ug", "Ukraine": "ua", "United Arab Emirates": "ae",
+      "United Kingdom": "gb", "United States": "us", "Uruguay": "uy", "Uzbekistan": "uz",
+      "Vanuatu": "vu", "Vatican City": "va", "Venezuela": "ve", "Vietnam": "vn",
+      "Yemen": "ye", "Zambia": "zm", "Zimbabwe": "zw"
+    };
+    
+    // Return the country code if found, otherwise return a default
+    return countryCodeMap[countryName] || 'xx';
+  }
+
+  // Helper function to get country name (simplified since we only have the name)
+  const getCountryName = (countryValue: string) => {
+    // Find by exact match
+    const country = countries.find(c => 
+      c.toLowerCase() === countryValue.toLowerCase()
+    );
+    
+    // Return the proper name if found, otherwise the original value
+    return country || countryValue;
+  }
+
   // Handle file upload (mock implementation)
   const handleFileUpload = (documentIndex: number, documentType: 'lksg' | 'csrd' | 'cbam' | 'reach') => {
     // In a real implementation, this would trigger a file upload dialog and upload to server
@@ -468,7 +597,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
           <Tabs defaultValue="main" className="w-full">
             <TabsList className="w-full border-b">
               <TabsTrigger value="main" className="flex-1">Main</TabsTrigger>
-              <TabsTrigger value="lksg" className="flex-1">Supply Chain Due Diligence Act</TabsTrigger>
+              <TabsTrigger value="lksg" className="flex-1">German Supply Chain Act (LkSG)</TabsTrigger>
               <TabsTrigger value="csrd" className="flex-1">CSRD</TabsTrigger>
               <TabsTrigger value="cbam" className="flex-1">CBAM</TabsTrigger>
               <TabsTrigger value="reach" className="flex-1">REACH</TabsTrigger>
@@ -482,6 +611,83 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                 getComplianceScore={getComplianceScore} 
                 getComplianceColor={getComplianceColor} 
               />
+              
+              {/* Country Score Card */}
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Country Score</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center pt-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-6 mr-3 rounded overflow-hidden border border-slate-200">
+                      <img 
+                        src={`https://flagcdn.com/w80/${getCountryCode(results?.country || '')}.png`} 
+                        alt={`${getCountryName(results?.country || '')} flag`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-lg font-medium">{getCountryName(results?.country || '')}</span>
+                  </div>
+                  <div className="relative w-32 h-32">
+                    {isLoadingScore ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-500"></div>
+                      </div>
+                    ) : countryScore !== null ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg viewBox="0 0 100 100" className="w-full h-full">
+                          <circle 
+                            cx="50" 
+                            cy="50" 
+                            r="45" 
+                            fill="none" 
+                            stroke="#e2e8f0" 
+                            strokeWidth="10" 
+                          />
+                          <circle 
+                            cx="50" 
+                            cy="50" 
+                            r="45" 
+                            fill="none" 
+                            stroke={
+                              countryScore >= 75 ? "#10b981" : 
+                              countryScore >= 50 ? "#f59e0b" : 
+                              "#ef4444"
+                            } 
+                            strokeWidth="10" 
+                            strokeDasharray={`${countryScore * 2.83} 283`} 
+                            strokeDashoffset="0" 
+                            strokeLinecap="round" 
+                            transform="rotate(-90 50 50)" 
+                          />
+                        </svg>
+                        <div className="absolute text-3xl font-bold">
+                          {countryScore}%
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="mt-4 text-center">
+                    <h3 className="text-sm font-medium mb-2">Country Risk Rating</h3>
+                    {isLoadingScore ? (
+                      <Badge variant="outline">Calculating...</Badge>
+                    ) : countryScore !== null ? (
+                      <Badge 
+                        className={`
+                          ${countryScore >= 75 ? "bg-emerald-100 text-emerald-800" : 
+                            countryScore >= 50 ? "bg-amber-100 text-amber-800" : 
+                            "bg-red-100 text-red-800"} 
+                          px-3 py-1
+                        `}
+                      >
+                        {countryScore >= 75 ? "Low Risk" : 
+                          countryScore >= 50 ? "Medium Risk" : 
+                          "High Risk"}
+                      </Badge>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Supply Chain Due Diligence Act Tab Content */}
