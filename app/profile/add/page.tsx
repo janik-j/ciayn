@@ -14,8 +14,8 @@ export default function AddSupplierPage() {
   const initialName = searchParams.get("name") || ""
 
   const handleSubmit = (newSupplier: any) => {
-    // After adding, redirect to the new supplier page
-    router.push(`/supplier/${encodeURIComponent(newSupplier.name)}`)
+    // After adding, redirect to the profile page
+    router.push(`/profile/${encodeURIComponent(newSupplier.name)}`);
   }
 
   return (
@@ -30,7 +30,7 @@ export default function AddSupplierPage() {
                 Back to Suppliers
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold text-slate-800">Add New Supplier</h1>
+            <h1 className="text-3xl font-bold text-slate-800">Add New Profile</h1>
           </div>
         </div>
 

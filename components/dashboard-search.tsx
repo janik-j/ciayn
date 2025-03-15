@@ -23,12 +23,12 @@ export function DashboardSearch() {
       const suppliers = await searchSuppliers({ name: searchTerm });
       
       if (suppliers && suppliers.length > 0) {
-        // Supplier exists, redirect to the supplier page
+        // Supplier exists, redirect to the profile page
         const supplier = suppliers[0];
-        router.push(`/supplier/${encodeURIComponent(supplier.name)}`);
+        router.push(`/profile/${encodeURIComponent(supplier.name)}`);
       } else {
         // Supplier doesn't exist, redirect to dedicated add supplier page with name parameter
-        router.push(`/supplier/add?name=${encodeURIComponent(searchTerm)}`);
+        router.push(`/profile/add?name=${encodeURIComponent(searchTerm)}`);
       }
     } catch (err) {
       console.error('Unexpected error during search:', err);
@@ -40,7 +40,7 @@ export function DashboardSearch() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Find or Add a Supplier</CardTitle>
+        <CardTitle>Find or Add a Profile</CardTitle>
         <CardDescription>Search for a supplier to analyze compliance and ESG risks</CardDescription>
       </CardHeader>
       <CardContent>
