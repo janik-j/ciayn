@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'CIAYN - Compliance Is All You Need',
+  description: 'A tool to help you manage your compliance',
 }
 
 export default function RootLayout({
