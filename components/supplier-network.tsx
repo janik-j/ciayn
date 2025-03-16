@@ -37,7 +37,9 @@ interface SupplierRelation {
 const SupplierNodeComponent = ({ data }: NodeProps<SupplierNode>) => {
   const nodeId = `supplier-${data.id}`
   const descriptionId = `desc-${nodeId}`
-  const complianceStatus = data.compliance_status?.lksg || 'Unknown'
+  
+  // Get LKSG status
+  const lksgStatus = data.compliance_status?.lksg === 'Compliant' ? 'Compliant' : 'Missing Disclosure'
   
   return (
     <div 
@@ -59,15 +61,14 @@ const SupplierNodeComponent = ({ data }: NodeProps<SupplierNode>) => {
         aria-label="Connection source point"
       />
       <div id={nodeId} className="font-bold text-sm">{data.name}</div>
+      <div className="text-xs mt-1 text-gray-600">LkSG</div>
       <div 
         id={descriptionId}
-        className={`text-xs mt-1 ${
-          complianceStatus === 'Compliant' ? 'text-green-600' :
-          complianceStatus === 'Partially Compliant' ? 'text-yellow-600' :
-          'text-red-600'
+        className={`text-xs mt-1 px-2 py-1 rounded ${
+          lksgStatus === 'Compliant' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
         }`}
       >
-        {complianceStatus}
+        {lksgStatus}
       </div>
     </div>
   )
@@ -159,16 +160,57 @@ export function SupplierNetwork() {
         return
       }
 
+      // Get all user-supplier associations to map users to their companies
+      const { data: allAssociations, error: associationsError } = await supabase
+        .from('user_supplier_association')
+        .select('user, supplier')
+        .in('supplier', Array.from(supplierIds))
+
+      if (associationsError) throw associationsError
+
+      // Create a map of supplier IDs to their user IDs
+      const supplierToUserMap = new Map<string, string>()
+      allAssociations?.forEach(assoc => {
+        supplierToUserMap.set(assoc.supplier, assoc.user)
+      })
+
+      // Get LKSG disclosures for all suppliers
+      const { data: lksgDisclosures, error: lksgError } = await supabase
+        .from('lksg_disclosures')
+        .select('*')
+        .in('user_id', Array.from(supplierToUserMap.values()))
+
+      if (lksgError) throw lksgError
+
+      // Create a map of supplier IDs to their LKSG status
+      const lksgStatusMap = new Map<string, boolean>()
+      if (lksgDisclosures) {
+        lksgDisclosures.forEach(disclosure => {
+          // Find the supplier ID for this user's disclosure
+          for (const [supplierId, userId] of supplierToUserMap.entries()) {
+            if (userId === disclosure.user_id) {
+              lksgStatusMap.set(supplierId, true)
+            }
+          }
+        })
+      }
+
       // Create nodes
       const newNodes: Node[] = []
       const centerY = 300
       const centerX = 400
 
-      // Add user's company node at the top
+      // Add user's company node at the top with its LKSG status
+      const rootUserId = supplierToUserMap.get(userCompany.supplier)
       newNodes.push({
         id: userCompany.supplier,
         type: 'supplier',
-        data: company,
+        data: {
+          ...company,
+          compliance_status: {
+            lksg: lksgStatusMap.get(userCompany.supplier) ? 'Compliant' : 'Non-Compliant'
+          }
+        },
         position: { x: centerX, y: centerY - 100 },
       })
 
@@ -190,7 +232,12 @@ export function SupplierNetwork() {
         newNodes.push({
           id: supplier.id,
           type: 'supplier',
-          data: supplier,
+          data: {
+            ...supplier,
+            compliance_status: {
+              lksg: lksgStatusMap.get(supplier.id) ? 'Compliant' : 'Non-Compliant'
+            }
+          },
           position: {
             x: startX + (col * horizontalSpacing),
             y: centerY + (row * verticalSpacing),
