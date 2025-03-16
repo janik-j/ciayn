@@ -44,6 +44,22 @@ export default function DisclosurePage() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [allSelectionsComplete, setAllSelectionsComplete] = useState(false);
+
+  // Check if all selections have been made
+  useEffect(() => {
+    if (disclosure) {
+      // Check if all disclosure items have been selected (are either true or false)
+      const allSelected = lksg_disclosure_items.every(item => {
+        const key = item.db_name as keyof LKSGDisclosure;
+        return disclosure[key] === true || disclosure[key] === false;
+      });
+      
+      setAllSelectionsComplete(allSelected);
+    } else {
+      setAllSelectionsComplete(false);
+    }
+  }, [disclosure]);
 
   // Check if current disclosure differs from original
   useEffect(() => {
@@ -55,7 +71,7 @@ export default function DisclosurePage() {
       });
       setHasChanges(changed);
     } else {
-      setHasChanges(false);
+      setHasChanges(disclosure !== null);
     }
   }, [disclosure, originalDisclosure]);
 
@@ -100,6 +116,13 @@ export default function DisclosurePage() {
           setOriginalDisclosure(data as LKSGDisclosure);
         } else {
           console.log('No disclosure data found for user');
+          // Initialize empty disclosure form for new users
+          const emptyDisclosure: Partial<LKSGDisclosure> = { user_id: user.id };
+          lksg_disclosure_items.forEach(item => {
+            emptyDisclosure[item.db_name as keyof LKSGDisclosure] = undefined as any;
+          });
+          setDisclosure(emptyDisclosure as LKSGDisclosure);
+          // Don't set originalDisclosure to keep track that this is a new entry
         }
       } catch (error) {
         console.error('Error in fetchDisclosure:', error);
@@ -191,20 +214,27 @@ export default function DisclosurePage() {
                   return;
                 }
                 
+                // Check if all questions have been answered
+                const allAnswered = lksg_disclosure_items.every(item => {
+                  const key = item.db_name as keyof LKSGDisclosure;
+                  return disclosure && (disclosure[key] === true || disclosure[key] === false);
+                });
+                
+                if (!allAnswered) {
+                  setErrorMessage('Please answer all disclosure questions before submitting');
+                  setSubmitStatus('error');
+                  setIsSubmitting(false);
+                  return;
+                }
+                
                 // Create an object to hold all the form values
                 const formValues: Record<string, boolean> = {};
                 
                 // Process all questions to ensure we have all field IDs
                 lksg_disclosure_items.forEach(item => {
-                  // Get the selected value for this field
-                  const yesInput = document.getElementById(`${item.db_name}-yes`) as HTMLInputElement | null;
-                  const noInput = document.getElementById(`${item.db_name}-no`) as HTMLInputElement | null;
-                  
-                  // Check which one is checked
-                  if (yesInput && yesInput.checked) {
-                    formValues[item.db_name] = true;
-                  } else if (noInput && noInput.checked) {
-                    formValues[item.db_name] = false;
+                  // Get the value directly from the disclosure state
+                  if (disclosure) {
+                    formValues[item.db_name] = disclosure[item.db_name as keyof LKSGDisclosure] === true;
                   } else {
                     // Default to false if neither is checked
                     formValues[item.db_name] = false;
@@ -299,7 +329,7 @@ export default function DisclosurePage() {
                             ${field.yes_is_positive ? 'hover:text-green-600' : 'hover:text-red-600'} 
                             ${disclosure?.[field.id as keyof LKSGDisclosure] === true ? 
                               (field.yes_is_positive ? 'border-green-500 text-green-600' : 'border-red-500 text-red-600') : 
-                              ''} 
+                              'text-gray-500'} 
                             transition-colors duration-200`}
                         >
                           Yes
@@ -326,7 +356,7 @@ export default function DisclosurePage() {
                             ${field.yes_is_positive ? 'hover:text-red-600' : 'hover:text-green-600'} 
                             ${disclosure?.[field.id as keyof LKSGDisclosure] === false ? 
                               (field.yes_is_positive ? 'border-red-500 text-red-600' : 'border-green-500 text-green-600') : 
-                              ''} 
+                              'text-gray-500'} 
                             transition-colors duration-200`}
                         >
                           No
@@ -353,14 +383,16 @@ export default function DisclosurePage() {
               
               <button
                 type="submit"
-                disabled={isSubmitting || !hasChanges}
+                disabled={isSubmitting || (!hasChanges) || !allSelectionsComplete}
                 className={`w-full rounded-md ${
-                  isSubmitting || !hasChanges
+                  isSubmitting || !hasChanges || !allSelectionsComplete
                     ? 'bg-blue-400 cursor-not-allowed' 
                     : 'bg-blue-600 hover:bg-blue-500'
                 } px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600`}
               >
-                {isSubmitting ? 'Saving...' : hasChanges ? 'Save Disclosures' : 'No Changes to Save'}
+                {isSubmitting ? 'Saving...' : 
+                 !allSelectionsComplete ? 'Answer All Questions to Save' :
+                 hasChanges ? 'Save Disclosures' : 'No Changes to Save'}
               </button>
             </div>
           </form>
