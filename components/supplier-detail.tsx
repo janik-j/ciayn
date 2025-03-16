@@ -506,7 +506,7 @@ export function SupplierDetail({ id }: { id: string }) {
             <CardContent>
               <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-center">
                 <Upload className="h-10 w-10 text-slate-400 mb-2" />
-                <h3 className="text-sm font-medium mb-1">Upload Documents</h3>
+                <h3 className="text-sm font-medium mb-1">Edit Documents</h3>
                 <p className="text-xs text-slate-500 mb-4">Drag and drop files or click to browse</p>
                 <Button variant="outline" size="sm">
                   <FileText className="mr-2 h-4 w-4" />
