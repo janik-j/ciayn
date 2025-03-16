@@ -48,7 +48,7 @@ export function CsrdTab({
       {/* CSRD tab AI insights */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>CSRD Insights</CardTitle>
+          <CardTitle>CSRD Insights from Latest News</CardTitle>
           <CardDescription>
             AI-powered analysis of sustainability reporting and disclosure practices
           </CardDescription>

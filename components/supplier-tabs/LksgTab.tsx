@@ -49,7 +49,7 @@ export function LksgTab({
       {/* LkSG tab AI insights */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>LkSG Insights</CardTitle>
+          <CardTitle>LkSG Insights from Latest News</CardTitle>
           <CardDescription>
             AI-powered analysis of supply chain due diligence and human rights issues
           </CardDescription>

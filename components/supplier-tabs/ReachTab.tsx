@@ -48,7 +48,7 @@ export function ReachTab({
       {/* REACH tab AI insights */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>REACH Insights</CardTitle>
+          <CardTitle>REACH Insights from Latest News</CardTitle>
           <CardDescription>
             AI-powered analysis of chemical regulation compliance and safety management
           </CardDescription>

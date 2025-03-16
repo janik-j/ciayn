@@ -48,7 +48,7 @@ export function CbamTab({
       {/* CBAM tab AI insights */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>CBAM Insights</CardTitle>
+          <CardTitle>CBAM Insights from Latest News</CardTitle>
           <CardDescription>
             AI-powered analysis of carbon emissions and border adjustment implications
           </CardDescription>
