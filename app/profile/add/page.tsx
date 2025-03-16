@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { AddSupplierForm } from "@/components/add-supplier-form"
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
-export default function AddSupplierPage() {
+function AddSupplierContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialName = searchParams.get("name") || ""
@@ -42,5 +42,13 @@ export default function AddSupplierPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function AddSupplierPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AddSupplierContent />
+    </Suspense>
   )
 } 
