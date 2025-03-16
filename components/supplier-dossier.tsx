@@ -103,6 +103,8 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [countryScore, setCountryScore] = useState<number | null>(null); // Change to null for initial state
   const [isLoadingScore, setIsLoadingScore] = useState(false);
+  const [isSupplierOwned, setIsSupplierOwned] = useState<boolean>(true)
+  const [isClaimingSupplier, setIsClaimingSupplier] = useState<boolean>(false)
 
   // Document states for each regulation
   const [lksgDocuments, setLksgDocuments] = useState<DocumentUploadType[]>([
@@ -243,6 +245,123 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
       checkIfAlreadyAdded()
     }
   }, [user, results])
+
+  useEffect(() => {
+    if (results?.id && user) {
+      checkSupplierOwnership(results.id)
+    }
+  }, [results?.id, user])
+
+  // Function to check if supplier is owned by any user
+  const checkSupplierOwnership = async (supplierId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_supplier_association')
+        .select('id, user')
+        .eq('supplier', supplierId)
+        .single()
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+        console.error('Error checking supplier ownership:', error)
+        return
+      }
+
+      setIsSupplierOwned(!!data)
+    } catch (error) {
+      console.error('Unexpected error checking supplier ownership:', error)
+    }
+  }
+
+  // Function to claim a supplier
+  const claimSupplier = async () => {
+    if (!user) {
+      toast({
+        title: "Not logged in",
+        description: "You need to be logged in to claim suppliers.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!results?.id) {
+      toast({
+        title: "Error",
+        description: "Supplier information is incomplete.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsClaimingSupplier(true)
+
+    try {
+      // Check again if supplier is already claimed (to prevent race conditions)
+      const { data: existingAssociation, error: checkError } = await supabase
+        .from('user_supplier_association')
+        .select('id, user')
+        .eq('supplier', results.id)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
+        console.error('Error checking supplier ownership:', checkError)
+        throw new Error('Failed to check supplier ownership')
+      }
+
+      // If supplier is already claimed
+      if (existingAssociation) {
+        if (existingAssociation.user === user.id) {
+          toast({
+            title: "Already owned",
+            description: "You already own this supplier.",
+          })
+        } else {
+          toast({
+            title: "Already claimed",
+            description: "This supplier has already been claimed by another user.",
+            variant: "destructive"
+          })
+        }
+        setIsSupplierOwned(true)
+        setIsClaimingSupplier(false)
+        return
+      }
+
+      // Create association (claim supplier)
+      const { error } = await supabase
+        .from('user_supplier_association')
+        .insert([{ user: user.id, supplier: results.id }])
+
+      if (error) {
+        // Handle unique constraint violation - user already owns a supplier
+        if (error.code === '23505' && error.message.includes('user_supplier_association_user_key')) {
+          toast({
+            title: "Claim limit reached",
+            description: "You can only claim one supplier. Please release your current supplier before claiming a new one.",
+            variant: "destructive"
+          })
+          setIsClaimingSupplier(false)
+          return
+        } else {
+          throw error
+        }
+      }
+
+      setIsSupplierOwned(true)
+      toast({
+        title: "Success",
+        description: `You have successfully claimed ${results.name}.`,
+      })
+    } catch (error) {
+      console.error("Error claiming supplier:", error)
+      toast({
+        title: "Error",
+        description: "Failed to claim supplier. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsClaimingSupplier(false)
+    }
+  }
 
   const handleCompanyFound = (companyData: DisplaySupplierData) => {
     // If we're on the supplier detail page, redirect to profile
@@ -577,21 +696,44 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                   <CardTitle>{results.name}</CardTitle>
                   <CardDescription>Supplier Assessment and Compliance</CardDescription>
                 </div>
-                {user && (
-                  <Button 
-                    variant="outline"
-                    size="sm" 
-                    onClick={handleSupplierButtonClick}
-                    disabled={checkingStatus}
-                    className={isAlreadyAdded ? "text-black-500 hover:text-red-600" : ""}
-                  >
-                    {checkingStatus ? 'Checking...' : 
-                     isAlreadyAdded ? 'Remove from My Suppliers' : 'Add to My Suppliers'}
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {user && (
+                    <Button 
+                      variant="outline"
+                      size="sm" 
+                      onClick={handleSupplierButtonClick}
+                      disabled={checkingStatus}
+                      className={isAlreadyAdded ? "text-black-500 hover:text-red-600" : ""}
+                    >
+                      {checkingStatus ? 'Checking...' : 
+                       isAlreadyAdded ? 'Remove from My Suppliers' : 'Add to My Suppliers'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
           </Card>
+
+          {user && !isSupplierOwned && (
+            <Alert className="mb-4 border-amber-500 bg-amber-50">
+              <div className="flex justify-between items-center w-full">
+                <div className="flex items-center">
+                  <Info className="h-4 w-4 text-amber-600 mr-2" />
+                  <AlertTitle className="text-amber-800">
+                    This supplier has not been claimed yet
+                  </AlertTitle>
+                </div>
+                <Button 
+                  variant="default"
+                  size="sm" 
+                  onClick={claimSupplier}
+                  disabled={isClaimingSupplier}
+                >
+                  {isClaimingSupplier ? 'Claiming...' : 'Claim Supplier'}
+                </Button>
+              </div>
+            </Alert>
+          )}
 
           <Tabs defaultValue="main" className="w-full">
             <TabsList className="w-full border-b">
