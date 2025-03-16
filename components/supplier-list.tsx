@@ -36,7 +36,11 @@ type Supplier = {
   employees: number
   website: string
   lastUpdated: string
+  esgRisk: {
+    overall: string
+  }
 }
+
 
 export function SupplierList({ initialData = [] }: { initialData?: Supplier[] }) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -211,80 +215,13 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
       ) : (
         <div className="space-y-4">
           {filteredSuppliers.map((supplier) => (
-<<<<<<< HEAD
-            <Card key={supplier.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <CardContent className="p-0">
-                <div className="flex flex-col md:flex-row">
-                  <div className={`w-2 md:w-1 flex-shrink-0 ${"High"}`} />
-                  <div className="flex-1 p-4 md:p-6">
-                    <div className="flex flex-col md:flex-row justify-between gap-4">
-                      <div className="space-y-1 md:space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-medium">{supplier.name}</h3>
-                        </div>
-                        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
-                          <div className="flex items-center gap-1">
-                            <Building className="h-3.5 w-3.5" />
-                            <span>{supplier.industry}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span>{supplier.country}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3.5 w-3.5" />
-                            <span>{supplier.employees.toLocaleString()} employees</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Globe className="h-3.5 w-3.5" />
-                            <a
-                              href={supplier.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-emerald-600 hover:text-emerald-700"
-                            >
-                              Website
-                            </a>
-                          </div>
-                          <div className="flex items-center gap-1 col-span-2 md:col-span-1">
-                            <RefreshCw className="h-3.5 w-3.5" />
-                            <span>Updated: {supplier.lastUpdated}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => refreshSupplier(supplier.id)}
-                          disabled={refreshingIds.includes(supplier.id)}
-                        >
-                          {refreshingIds.includes(supplier.id) ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button 
-                          size="sm"
-                          onClick={() => viewSupplierDetails(supplier)}
-                        >
-                          View Supplier
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </div>
-=======
             <Card key={supplier.id} className="relative overflow-hidden">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <CompanyLogo companyName={supplier.name} size={32} />
+                    <CompanyLogo companyName={supplier.name} size={32} /> 
                     <div>
                       <h3 className="text-lg font-semibold">{supplier.name}</h3>
-                      <Badge className={getRiskColor(supplier.esgRisk.overall)}>
-                        {supplier.esgRisk.overall} Risk
-                      </Badge>
->>>>>>> bb464e7ed9b490a62453495bdb17558ba9b0d1c8
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -310,7 +247,6 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                   </div>
                 </div>
 
-<<<<<<< HEAD
                     <div className="grid grid-cols-1 md:grid-cols-8 gap-4 mt-4">
                       <div className="space-y-1">
                         <h4 className="text-xs font-medium text-slate-500">LkSG</h4>
@@ -344,66 +280,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                           </Badge>
                         </div>
                       </div>
-=======
-                <div className="grid grid-cols-1 md:grid-cols-8 gap-4 mt-4">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">Environmental</h4>
-                    <Badge className={getRiskColor(supplier.esgRisk.environmental)}>
-                      {supplier.esgRisk.environmental}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">Social</h4>
-                    <Badge className={getRiskColor(supplier.esgRisk.social)}>{supplier.esgRisk.social}</Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">Governance</h4>
-                    <Badge className={getRiskColor(supplier.esgRisk.governance)}>
-                      {supplier.esgRisk.governance}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">LkSG</h4>
-                    <div className="flex items-center gap-1">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.lksg)}>
-                        {supplier.complianceStatus.lksg}
-                      </Badge>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">CBAM</h4>
-                    <div className="flex items-center gap-1">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.cbam)}>
-                        {supplier.complianceStatus.cbam}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">CSDD</h4>
-                    <div className="flex items-center gap-1">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.csdd)}>
-                        {supplier.complianceStatus.csdd}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">CSRD</h4>
-                    <div className="flex items-center gap-1">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.csrd)}>
-                        {supplier.complianceStatus.csrd}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500">REACH</h4>
-                    <div className="flex items-center gap-1">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.reach)}>
-                        {supplier.complianceStatus.reach}
-                      </Badge>
->>>>>>> bb464e7ed9b490a62453495bdb17558ba9b0d1c8
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           ))}
