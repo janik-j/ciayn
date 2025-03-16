@@ -1,6 +1,6 @@
 'use client'
 
-import { User } from "lucide-react"
+import { User, Network } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
@@ -15,6 +15,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/components/ui/use-toast"
 import { useCallback } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { SupplierNetwork } from "@/components/supplier-network"
 
 export function Header() {
   const { user, signOut } = useAuth()
@@ -57,6 +65,26 @@ export function Header() {
                 My Suppliers
               </Link>
             </li>
+            {user && (
+              <li>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 text-sm font-medium">
+                      <Network className="h-4 w-4" />
+                      Network
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[800px]">
+                    <DialogHeader>
+                      <DialogTitle>Supplier Network</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4">
+                      <SupplierNetwork />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </li>
+            )}
             {user ? (
               <li>
                 <DropdownMenu>
