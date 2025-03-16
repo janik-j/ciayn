@@ -39,10 +39,10 @@ export function CbamTab({
   
   // Fetch existing documents when component mounts
   useEffect(() => {
-    if (user && supplier) {
+    if (supplier) {
       fetchExistingDocuments()
     }
-  }, [user, supplier.id])
+  }, [supplier.id])
   
   // Function to fetch existing documents from Supabase
   const fetchExistingDocuments = async () => {
@@ -53,7 +53,6 @@ export function CbamTab({
       const { data: existingDocs, error } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', user?.id)
         .eq('supplier_id', supplier.id)
         .eq('document_type', 'cbam')
         .eq('status', 'active')
@@ -148,7 +147,6 @@ export function CbamTab({
       const { data: documentRecords, error: queryError } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', user?.id)
         .eq('supplier_id', supplier.id)
         .eq('document_type', 'cbam')
         .eq('metadata->documentIndex', documentIndex.toString())
@@ -209,14 +207,14 @@ export function CbamTab({
   
   // Function to handle the upload from the modal
   const handleModalUpload = async () => {
-    if (selectedDocumentIndex !== null && selectedFile && user) {
+    if (selectedDocumentIndex !== null && selectedFile) {
       try {
         setIsUploading(true)
         
         // 1. Upload file to Supabase Storage
         const fileExt = selectedFile.name.split('.').pop()
         const fileName = `${uuidv4()}.${fileExt}`
-        const filePath = `cbam-docs/${user.id}/${fileName}` // Use category and user ID for better organization
+        const filePath = `cbam-docs/${supplier.id}/${fileName}` // Use supplier ID instead of user ID
         
         // List of common bucket names to try in Supabase
         const commonBucketNames = ['document-uploads']
@@ -309,7 +307,6 @@ export function CbamTab({
           const { data: documentData, error: documentError } = await supabase
             .from('documents')
             .insert([{
-              user_id: user.id,
               supplier_id: supplier.id,
               document_type: 'cbam',
               original_filename: selectedFile.name,
