@@ -1,17 +1,33 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Loader2 } from "lucide-react"
+import { Search, Loader2, Plus } from "lucide-react"
 import { searchSuppliers } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { CompanyLogo } from "@/components/company-logo"
+import { Badge } from "@/components/ui/badge"
 
 export function ExploreSearch() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isSearching, setIsSearching] = useState(false)
+  const carouselRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  const scrollLeft = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: -320, behavior: "smooth" })
+    }
+  }
+
+  const scrollRight = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: 320, behavior: "smooth" })
+    }
+  }
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return
@@ -72,6 +88,74 @@ export function ExploreSearch() {
               </>
             )}
           </Button>
+        </div>
+        
+        {/* Recommended Suppliers Section */}
+        <div className="space-y-4 mt-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Recommended for You</h2>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" onClick={scrollLeft} className="rounded-full h-8 w-8">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={scrollRight} className="rounded-full h-8 w-8">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div 
+            ref={carouselRef} 
+            className="overflow-x-auto flex gap-4 py-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {[
+              {
+                name: "NVIDIA",
+                industry: "Semiconductors",
+                country: "United States"
+              },
+              {
+                name: "TSMC",
+                industry: "Semiconductors",
+                country: "Taiwan"
+              },
+              {
+                name: "Samsung Electronics",
+                industry: "Electronics",
+                country: "South Korea"
+              },
+              {
+                name: "Intel",
+                industry: "Semiconductors",
+                country: "United States"
+              },
+              {
+                name: "ASML",
+                industry: "Semiconductor Equipment",
+                country: "Netherlands"
+              }
+            ].map((supplier) => (
+              <div key={supplier.name} className="flex-shrink-0 w-72">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <CompanyLogo companyName={supplier.name} size={40} />
+                      <div>
+                        <h3 className="font-semibold">{supplier.name}</h3>
+                        <p className="text-sm text-slate-500">{supplier.industry}</p>
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <Badge variant="secondary" className="w-full justify-center">{supplier.country}</Badge>
+                    </div>
+                    <Button className="w-full" variant="outline" onClick={() => router.push(`/profile/${encodeURIComponent(supplier.name)}`)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      View Supplier
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>

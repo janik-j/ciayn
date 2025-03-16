@@ -1,10 +1,27 @@
+"use client"
+
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ListFilter, Database } from "lucide-react"
 import { ExploreSearch } from "@/components/explore-search"
+import { useRef } from "react"
 
 export default function Home() {
+  const carouselRef = useRef<HTMLDivElement>(null)
+
+  const scrollLeft = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: -320, behavior: "smooth" })
+    }
+  }
+
+  const scrollRight = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: 320, behavior: "smooth" })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
