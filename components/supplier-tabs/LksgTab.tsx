@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AIAnalysisOnly } from "@/components/news-feed-analyzer"
 import { RegulationOverview, UploadStatus } from "./shared-components"
@@ -15,10 +16,42 @@ import { useToast } from "@/components/ui/use-toast"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 import { v4 as uuidv4 } from "uuid"
+import { lksg_disclosure_items } from "@/lib/lksg_disclosure"
+import { AlertTriangle } from "lucide-react"
 
 interface LksgTabProps extends TabCommonProps {
   documents: DocumentUploadType[];
   setDocuments: React.Dispatch<React.SetStateAction<DocumentUploadType[]>>;
+}
+
+interface LKSGDisclosure {
+  user_id: string;
+  child_labor_violation: boolean;
+  child_labor_processes: boolean;
+  forced_labor_processes: boolean;
+  slavery_violation: boolean;
+  slavery_processes: boolean;
+  forced_eviction_violation: boolean;
+  forced_eviction_processes: boolean;
+  security_forces_violation: boolean;
+  security_forces_processes: boolean;
+  workplace_safety_violation: boolean;
+  workplace_safety_processes: boolean;
+  freedom_association_violation: boolean;
+  freedom_association_processes: boolean;
+  employment_discrimination_violation: boolean;
+  employment_discrimination_processes: boolean;
+  fair_wage_violation: boolean;
+  fair_wage_processes: boolean;
+  mercury_violation: boolean;
+  mercury_processes: boolean;
+  organic_pollutants_violation: boolean;
+  organic_pollutants_processes: boolean;
+  hazardous_waste_violation: boolean;
+  hazardous_waste_processes: boolean;
+  environmental_damage_violation: boolean;
+  environmental_damage_processes: boolean;
+  last_updated: string;
 }
 
 export function LksgTab({ 
@@ -33,6 +66,9 @@ export function LksgTab({
   const [selectedDocumentIndex, setSelectedDocumentIndex] = useState<number | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [supplierOwner, setSupplierOwner] = useState<string | null>(null)
+  const [disclosure, setDisclosure] = useState<LKSGDisclosure | null>(null)
+  const [isLoadingDisclosure, setIsLoadingDisclosure] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const { user } = useAuth()
@@ -119,6 +155,57 @@ export function LksgTab({
       console.error('Failed to fetch existing documents:', error)
     }
   }
+  
+  // Fetch supplier owner and disclosure data
+  useEffect(() => {
+    const fetchSupplierOwnerAndDisclosure = async () => {
+      if (!supplier.id) return
+      
+      setIsLoadingDisclosure(true)
+      try {
+        // 1. Find who owns the supplier
+        const { data: ownerData, error: ownerError } = await supabase
+          .from('user_supplier_association')
+          .select('user')
+          .eq('supplier', supplier.id)
+          .single()
+          
+        if (ownerError && ownerError.code !== 'PGRST116') {
+          console.error('Error fetching supplier owner:', ownerError)
+          return
+        }
+        
+        if (!ownerData) {
+          // No owner found for this supplier
+          return
+        }
+        
+        setSupplierOwner(ownerData.user)
+        
+        // 2. Fetch the owner's LKSG disclosure
+        const { data: disclosureData, error: disclosureError } = await supabase
+          .from('lksg_disclosures')
+          .select('*')
+          .eq('user_id', ownerData.user)
+          .single()
+          
+        if (disclosureError && disclosureError.code !== 'PGRST116') {
+          console.error('Error fetching LKSG disclosure:', disclosureError)
+          return
+        }
+        
+        if (disclosureData) {
+          setDisclosure(disclosureData as LKSGDisclosure)
+        }
+      } catch (error) {
+        console.error('Error in fetchSupplierOwnerAndDisclosure:', error)
+      } finally {
+        setIsLoadingDisclosure(false)
+      }
+    }
+    
+    fetchSupplierOwnerAndDisclosure()
+  }, [supplier.id])
   
   // Find a document that needs uploading 
   const openUploadModal = (documentIndex: number) => {
@@ -370,8 +457,8 @@ export function LksgTab({
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Card>
+        <div className="md:col-span-2 h-full">
+          <Card className="h-full flex flex-col">
             <CardHeader>
               <CardTitle>German Supply Chain Act (LkSG)</CardTitle>
               <CardDescription>
@@ -379,7 +466,7 @@ export function LksgTab({
                 It initially applied to companies with at least 3,000 employees in Germany and expanded to those with at least 1,000 employees from 2024.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 flex flex-col">
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium mb-2">Required Documentation</h3>
@@ -430,7 +517,7 @@ export function LksgTab({
           </Card>
         </div>
 
-        <div>
+        <div className="h-full">
           <UploadStatus 
             documents={documents}
             complianceStatus={supplier.complianceStatus.lksg}
@@ -438,6 +525,67 @@ export function LksgTab({
           />
         </div>
       </div>
+
+      {/* LKSG Disclosure Display */}
+      <Card className="mt-6">
+        <CardHeader className="pb-2">
+          <CardTitle>Supplier's LKSG Disclosure</CardTitle>
+          <CardDescription>
+            Self-reported compliance information submitted by this supplier
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingDisclosure ? (
+            <div className="flex justify-center items-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : disclosure ? (
+            <>
+              <div className="text-xs text-right text-muted-foreground mb-2">
+                Last updated: {disclosure.last_updated ? new Date(disclosure.last_updated).toLocaleDateString() : 'N/A'}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {lksg_disclosure_items.map((item, index) => {
+                  const value = disclosure[item.db_name as keyof LKSGDisclosure]
+                  const isPositive = (item.yes_is_positive && value === true) || 
+                                    (!item.yes_is_positive && value === false)
+                  
+                  return (
+                    <div key={index} className="flex items-center justify-between p-2 border rounded text-sm">
+                      <div className="mr-2">
+                        <p className="font-medium text-xs">{item.label}</p>
+                      </div>
+                      <Badge 
+                        className={`
+                          ${isPositive ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'}
+                          text-xs font-medium whitespace-nowrap
+                        `}
+                      >
+                        {value ? 'Yes' : 'No'}
+                      </Badge>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="p-4 border border-red-200 bg-red-50 rounded-md text-red-800">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 text-red-600" />
+                <div>
+                  <h4 className="font-medium mb-1">Missing LKSG Disclosure</h4>
+                  <p className="text-sm">
+                    This supplier hasn't submitted any LKSG disclosure information. This is a significant compliance concern as it could indicate lack of due diligence in their supply chain management.
+                  </p>
+                  <p className="text-sm mt-2 font-medium">
+                    Recommendation: Request the supplier to complete their LKSG disclosure before proceeding further.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* LkSG tab AI insights */}
       <Card className="mt-6">

@@ -67,11 +67,11 @@ interface UploadStatusProps {
 
 export function UploadStatus({ documents, complianceStatus, getComplianceColor }: UploadStatusProps) {
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Upload Status</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col justify-between">
         <div className="space-y-6">
           <div>
             <div className="flex justify-between items-center mb-2">
@@ -107,30 +107,30 @@ export function UploadStatus({ documents, complianceStatus, getComplianceColor }
               }
             </div>
           </div>
+        </div>
 
-          <div>
-            <h3 className="text-sm font-medium mb-2">Next Steps</h3>
-            <ul className="space-y-2 text-sm">
-              {documents.some(doc => doc.status === "Required" && !doc.uploaded) && (
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
-                  <span>Upload all required documents to improve compliance</span>
-                </li>
-              )}
-              {complianceStatus === "Partially Compliant" && (
-                <li className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-blue-500 mt-0.5" />
-                  <span>Review documentation to ensure all required information is included</span>
-                </li>
-              )}
-              {complianceStatus === "Non-Compliant" && (
-                <li className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
-                  <span>Urgent action required - address compliance gaps immediately</span>
-                </li>
-              )}
-            </ul>
-          </div>
+        <div className="mt-auto pt-4">
+          <h3 className="text-sm font-medium mb-2">Next Steps</h3>
+          <ul className="space-y-2 text-sm">
+            {documents.some(doc => doc.status === "Required" && !doc.uploaded) && (
+              <li className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                <span>Upload all required documents to improve compliance</span>
+              </li>
+            )}
+            {complianceStatus === "Partially Compliant" && (
+              <li className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                <span>Review documentation to ensure all required information is included</span>
+              </li>
+            )}
+            {complianceStatus === "Non-Compliant" && (
+              <li className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+                <span>Urgent action required - address compliance gaps immediately</span>
+              </li>
+            )}
+          </ul>
         </div>
       </CardContent>
     </Card>
@@ -164,9 +164,10 @@ export function RegulationOverview({
   // File input ref
   const handleUploadClick = () => {
     if (typeof handleFileUpload === 'function') {
-      if (handleFileUpload.length === 0) {
+      // Handle different types of handleFileUpload functions
+      if ('length' in handleFileUpload && handleFileUpload.length === 0) {
         // If it takes no parameters, just call it directly (for modal)
-        handleFileUpload();
+        (handleFileUpload as () => void)();
       } else {
         // Otherwise use the file input approach
         const fileInput = document.createElement('input');
@@ -175,7 +176,18 @@ export function RegulationOverview({
         fileInput.onchange = (e) => {
           const files = (e.target as HTMLInputElement).files;
           if (files && files[0]) {
-            (handleFileUpload as (file: File) => Promise<any>)(files[0]);
+            // Use a type guard to ensure we're passing the right arguments
+            // Cast to the documentIndex and documentType handler
+            if (documentType) {
+              // Cast to the document handler with two parameters
+              const docHandler = handleFileUpload as (index: number, type: RegulationType) => void;
+              // Pass a default index of 0 and the document type
+              docHandler(0, documentType);
+            } else {
+              // Cast to the file handler with one parameter
+              const fileHandler = handleFileUpload as (file: File) => Promise<any>;
+              fileHandler(files[0]);
+            }
           }
         };
         fileInput.click();
@@ -199,11 +211,11 @@ export function RegulationOverview({
               {complianceStatus}
             </Badge>
             <Progress 
-              value={getComplianceScore(complianceStatus)} 
+              value={parseFloat(getComplianceScore(complianceStatus as any).toString())}
               className="flex-1 h-2"
             />
             <span className="text-sm font-medium">
-              {getComplianceScore(complianceStatus)}%
+              {getComplianceScore(complianceStatus as any)}%
             </span>
           </div>
         </div>
@@ -220,7 +232,7 @@ export function RegulationOverview({
           <h3 className="text-sm font-medium pt-2">Required Documentation</h3>
           <DocumentUploads 
             documents={documents} 
-            handleFileUpload={handleFileUpload} 
+            handleFileUpload={handleFileUpload as any} 
             documentType={documentType} 
           />
         </div>
