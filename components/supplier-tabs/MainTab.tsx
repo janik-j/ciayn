@@ -393,29 +393,6 @@ export function MainTab({
             </div>
 
             <div className="mt-6">
-              <h3 className="text-sm font-medium mb-3">Red Flags</h3>
-              <div className="space-y-2">
-                {supplier.redFlags.length > 0 ? (
-                  supplier.redFlags.map((flag, index) => (
-                    <Alert key={index}>
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      <AlertTitle className="ml-2 text-sm font-medium">Risk Identified</AlertTitle>
-                      <AlertDescription className="ml-2 text-sm">{flag}</AlertDescription>
-                    </Alert>
-                  ))
-                ) : (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                    <AlertTitle className="ml-2 text-sm font-medium">No Risks Identified</AlertTitle>
-                    <AlertDescription className="ml-2 text-sm">
-                      No significant red flags have been identified for this supplier.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-6">
               <h3 className="text-sm font-medium mb-3">Compliance Overview</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="relative">
