@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase/client"
 import Link from "next/link"
+import { useToast } from "@/components/ui/use-toast"
 
 // Define an interface for supplier data
 interface SupplierData {
@@ -22,6 +23,8 @@ export default function ProfilePage() {
   const router = useRouter()
   const [claimedSupplier, setClaimedSupplier] = useState<SupplierData | null>(null)
   const [isLoadingSupplier, setIsLoadingSupplier] = useState(false)
+  const [isRemovingSupplier, setIsRemovingSupplier] = useState(false)
+  const { toast } = useToast()
   
   useEffect(() => {
     if (!loading && !user) {
@@ -75,6 +78,44 @@ export default function ProfilePage() {
     
     fetchClaimedSupplier();
   }, [user]);
+
+  // Function to remove claimed supplier
+  const removeClaimedSupplier = async () => {
+    if (!user || !claimedSupplier) return;
+    
+    setIsRemovingSupplier(true);
+    try {
+      const { error } = await supabase
+        .from('user_supplier_association')
+        .delete()
+        .eq('user', user.id);
+      
+      if (error) {
+        console.error('Error removing supplier association:', error);
+        toast({
+          title: "Error",
+          description: "Failed to remove claimed supplier. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setClaimedSupplier(null);
+      toast({
+        title: "Success",
+        description: "Supplier has been removed from your profile.",
+      });
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRemovingSupplier(false);
+    }
+  };
 
   // Don't render anything if not logged in
   if (!user) {
@@ -147,6 +188,15 @@ export default function ProfilePage() {
                       <Link href={`/profile/${encodeURIComponent(claimedSupplier.name)}`}>
                         View Supplier Details
                       </Link>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={removeClaimedSupplier}
+                      disabled={isRemovingSupplier}
+                    >
+                      {isRemovingSupplier ? 'Removing...' : 'Remove Claimed Supplier'}
                     </Button>
                   </div>
                 </div>
