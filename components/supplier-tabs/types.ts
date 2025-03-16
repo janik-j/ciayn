@@ -21,6 +21,11 @@ export type DisplaySupplierData = {
     reach: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
   };
   recommendations: string[];
+  lksgDocuments?: DocumentUploadType[];
+  csrdDocuments?: DocumentUploadType[];
+  cbamDocuments?: DocumentUploadType[];
+  reachDocuments?: DocumentUploadType[];
+  relatedCompany?: string;
 }
 
 export type DocumentUploadType = {
@@ -37,4 +42,6 @@ export interface TabCommonProps {
   getComplianceScore: (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => number;
   getComplianceColor: (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => string;
   handleFileUpload: (documentIndex: number, documentType: RegulationType) => void;
+  documents: DocumentUploadType[];
+  setDocuments: Dispatch<SetStateAction<DocumentUploadType[]>>;
 } 

@@ -88,6 +88,10 @@ type DisplaySupplierData = {
   };
   recommendations: string[];
   countryScore?: number; // Optional for backward compatibility
+  lksgDocuments: DocumentUploadType[];
+  csrdDocuments: DocumentUploadType[];
+  cbamDocuments: DocumentUploadType[];
+  reachDocuments: DocumentUploadType[];
 }
 
 interface SupplierDossierProps {
@@ -101,7 +105,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const { toast } = useToast()
   const [isAlreadyAdded, setIsAlreadyAdded] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
-  const [countryScore, setCountryScore] = useState<number | null>(null); // Change to null for initial state
+  const [countryScore, setCountryScore] = useState<number | null>(null);
   const [isLoadingScore, setIsLoadingScore] = useState(false);
   const [isSupplierOwned, setIsSupplierOwned] = useState<boolean>(true)
   const [isClaimingSupplier, setIsClaimingSupplier] = useState<boolean>(false)
@@ -208,6 +212,19 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
       uploaded: false
     }
   ]);
+
+  // Update results when documents change
+  useEffect(() => {
+    if (results) {
+      setResults({
+        ...results,
+        lksgDocuments,
+        csrdDocuments,
+        cbamDocuments,
+        reachDocuments
+      });
+    }
+  }, [lksgDocuments, csrdDocuments, cbamDocuments, reachDocuments]);
 
   // Check if the supplier is already in the user's list
   const checkIfAlreadyAdded = async () => {
@@ -748,7 +765,13 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
             {/* Main Tab Content */}
             <TabsContent value="main">
               <MainTab 
-                supplier={results} 
+                supplier={{
+                  ...results,
+                  lksgDocuments,
+                  csrdDocuments,
+                  cbamDocuments,
+                  reachDocuments
+                }}
                 getComplianceScore={getComplianceScore} 
                 getComplianceColor={getComplianceColor} 
               />

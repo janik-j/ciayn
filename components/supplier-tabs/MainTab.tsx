@@ -16,6 +16,8 @@ import { TabCommonProps } from "./types"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { countries } from "@/lib/countries"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 // Extend MainTabProps to include countryScore properties
 type MainTabProps = Pick<TabCommonProps, 'supplier' | 'getComplianceScore' | 'getComplianceColor'>
@@ -25,8 +27,16 @@ export function MainTab({
   getComplianceScore, 
   getComplianceColor 
 }: MainTabProps) {
+  const router = useRouter();
   const [countryScore, setCountryScore] = useState<number | null>(null);
   const [isLoadingScore, setIsLoadingScore] = useState(false);
+  const [documentCounts, setDocumentCounts] = useState({
+    lksg: { uploaded: 0, total: 5 },
+    csrd: { uploaded: 0, total: 3 },
+    cbam: { uploaded: 0, total: 3 },
+    reach: { uploaded: 0, total: 4 }
+  });
+  const [hasLksgDisclosure, setHasLksgDisclosure] = useState(false);
   
   const getTotalComplianceScore = () => {
     const scores = [
@@ -179,6 +189,119 @@ export function MainTab({
     loadCountryScore();
   }, [supplier]);
 
+  // Fetch document counts from Supabase
+  useEffect(() => {
+    const fetchDocumentCounts = async () => {
+      if (!supplier?.id) return;
+
+      try {
+        const { data: documents, error } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('supplier_id', supplier.id)
+          .eq('status', 'active');
+
+        if (error) {
+          console.error('Error fetching documents:', error);
+          return;
+        }
+
+        // Count documents by type
+        const counts = {
+          lksg: documents?.filter(doc => 
+            doc.document_type.toLowerCase().includes('lksg') || 
+            doc.document_type.toLowerCase().includes('german supply chain')
+          ).length || 0,
+          csrd: documents?.filter(doc => 
+            doc.document_type.toLowerCase().includes('csrd') || 
+            doc.document_type.toLowerCase().includes('sustainability reporting')
+          ).length || 0,
+          cbam: documents?.filter(doc => 
+            doc.document_type.toLowerCase().includes('cbam') || 
+            doc.document_type.toLowerCase().includes('carbon border')
+          ).length || 0,
+          reach: documents?.filter(doc => 
+            doc.document_type.toLowerCase().includes('reach') || 
+            doc.document_type.toLowerCase().includes('chemical')
+          ).length || 0
+        };
+
+        setDocumentCounts({
+          lksg: { 
+            uploaded: counts.lksg,
+            total: 5 
+          },
+          csrd: { 
+            uploaded: counts.csrd,
+            total: 3 
+          },
+          cbam: { 
+            uploaded: counts.cbam,
+            total: 3 
+          },
+          reach: { 
+            uploaded: counts.reach,
+            total: 4 
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching document counts:', error);
+      }
+    };
+
+    fetchDocumentCounts();
+  }, [supplier?.id]);
+
+  // Replace the LKSG disclosure check with the new logic
+  useEffect(() => {
+    const checkLksgDisclosure = async () => {
+      if (!supplier?.id) return;
+
+      try {
+        // First get all suppliers associated with users
+        const { data: associations, error: assocError } = await supabase
+          .from('user_supplier_association')
+          .select('user')
+          .eq('supplier', supplier.id);
+
+        if (assocError) {
+          console.error('Error checking supplier associations:', assocError);
+          return;
+        }
+
+        if (!associations || associations.length === 0) {
+          setHasLksgDisclosure(false);
+          return;
+        }
+
+        // Get all user IDs that are associated with this supplier
+        const userIds = associations.map(assoc => assoc.user);
+
+        // Check if any of these users have an LKSG disclosure
+        const { data: disclosures, error: discError } = await supabase
+          .from('lksg_disclosures')
+          .select('*')
+          .in('user_id', userIds)
+          .single();
+
+        if (discError) {
+          console.error('Error checking LKSG disclosures:', discError);
+          return;
+        }
+
+        setHasLksgDisclosure(!!disclosures);
+      } catch (error) {
+        console.error('Error in LKSG disclosure check:', error);
+      }
+    };
+
+    checkLksgDisclosure();
+  }, [supplier?.id]);
+
+  const navigateToTab = (tab: string) => {
+    router.push(`/suppliers/${supplier.id}/${tab}`);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:min-h-[700px]">
       {/* Company Information Card */}
@@ -257,13 +380,37 @@ export function MainTab({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">German Supply Chain Act (LkSG)</CardTitle>
+                    <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.lksg)}>
-                        {supplier.complianceStatus.lksg}
-                      </Badge>
-                      <Progress value={getComplianceScore(supplier.complianceStatus.lksg)} className="w-24 h-2" />
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-3xl font-semibold">
+                            {documentCounts.lksg.uploaded}
+                          </span>
+                          <span className="text-lg text-slate-500">
+                            / {documentCounts.lksg.total}
+                          </span>
+                        </div>
+                        <Badge 
+                          className={
+                            hasLksgDisclosure
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-red-100 text-red-800"
+                          }
+                        >
+                          {hasLksgDisclosure
+                            ? "Disclosure Added" 
+                            : "Missing Disclosure"
+                          }
+                        </Badge>
+                      </div>
+                      {!hasLksgDisclosure && (
+                        <p className="text-sm text-red-600 mt-2">
+                          This supplier hasn't submitted any LKSG disclosure information. This is a significant compliance concern as it could indicate lack of due diligence in their supply chain management.
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -271,13 +418,32 @@ export function MainTab({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">CSRD</CardTitle>
+                    <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.csrd)}>
-                        {supplier.complianceStatus.csrd}
-                      </Badge>
-                      <Progress value={getComplianceScore(supplier.complianceStatus.csrd)} className="w-24 h-2" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-3xl font-semibold">
+                          {documentCounts.csrd.uploaded}
+                        </span>
+                        <span className="text-lg text-slate-500">
+                          / {documentCounts.csrd.total}
+                        </span>
+                      </div>
+                      {documentCounts.csrd.uploaded < documentCounts.csrd.total ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigateToTab('csrd')}
+                          className="text-xs"
+                        >
+                          Upload Documents
+                        </Button>
+                      ) : (
+                        <Badge className={getComplianceColor(supplier.complianceStatus.csrd)}>
+                          {supplier.complianceStatus.csrd}
+                        </Badge>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -285,13 +451,32 @@ export function MainTab({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">CBAM</CardTitle>
+                    <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.cbam)}>
-                        {supplier.complianceStatus.cbam}
-                      </Badge>
-                      <Progress value={getComplianceScore(supplier.complianceStatus.cbam)} className="w-24 h-2" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-3xl font-semibold">
+                          {documentCounts.cbam.uploaded}
+                        </span>
+                        <span className="text-lg text-slate-500">
+                          / {documentCounts.cbam.total}
+                        </span>
+                      </div>
+                      {documentCounts.cbam.uploaded < documentCounts.cbam.total ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigateToTab('cbam')}
+                          className="text-xs"
+                        >
+                          Upload Documents
+                        </Button>
+                      ) : (
+                        <Badge className={getComplianceColor(supplier.complianceStatus.cbam)}>
+                          {supplier.complianceStatus.cbam}
+                        </Badge>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -299,13 +484,32 @@ export function MainTab({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">REACH</CardTitle>
+                    <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <Badge className={getComplianceColor(supplier.complianceStatus.reach)}>
-                        {supplier.complianceStatus.reach}
-                      </Badge>
-                      <Progress value={getComplianceScore(supplier.complianceStatus.reach)} className="w-24 h-2" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-3xl font-semibold">
+                          {documentCounts.reach.uploaded}
+                        </span>
+                        <span className="text-lg text-slate-500">
+                          / {documentCounts.reach.total}
+                        </span>
+                      </div>
+                      {documentCounts.reach.uploaded < documentCounts.reach.total ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigateToTab('reach')}
+                          className="text-xs"
+                        >
+                          Upload Documents
+                        </Button>
+                      ) : (
+                        <Badge className={getComplianceColor(supplier.complianceStatus.reach)}>
+                          {supplier.complianceStatus.reach}
+                        </Badge>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
