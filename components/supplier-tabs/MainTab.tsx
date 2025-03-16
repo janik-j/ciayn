@@ -297,12 +297,7 @@ export function MainTab({
           .in('user_id', userIds)
           .single();
 
-        if (discError) {
-          console.error('Error checking LKSG disclosures:', discError);
-          return;
-        }
-
-        setHasLksgDisclosure(!!disclosures);
+        setHasLksgDisclosure(disclosures);
       } catch (error) {
         console.error('Error in LKSG disclosure check:', error);
       }
@@ -427,11 +422,6 @@ export function MainTab({
                           Edit Documents
                         </Button>
                       </div>
-                      {!hasLksgDisclosure && (
-                        <p className="text-sm text-red-600 mt-2">
-                          This supplier hasn't submitted any LKSG disclosure information. This is a significant compliance concern as it could indicate lack of due diligence in their supply chain management.
-                        </p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>

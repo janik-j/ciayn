@@ -56,7 +56,7 @@ export function ExploreSearch() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Find or Add a Profile</CardTitle>
+        <CardTitle>Find or Add a Supplier</CardTitle>
         <CardDescription>Search for a supplier to analyze compliance and ESG risks</CardDescription>
       </CardHeader>
       <CardContent>
@@ -148,7 +148,6 @@ export function ExploreSearch() {
                       <Badge variant="secondary" className="w-full justify-center">{supplier.country}</Badge>
                     </div>
                     <Button className="w-full" variant="outline" onClick={() => router.push(`/profile/${encodeURIComponent(supplier.name)}`)}>
-                      <Plus className="mr-2 h-4 w-4" />
                       View Supplier
                     </Button>
                   </CardContent>
