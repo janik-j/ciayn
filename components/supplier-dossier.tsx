@@ -723,7 +723,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                       <div className="flex items-center gap-2">
                         <span>{results.industry}</span>
                         <span>•</span>
-                        <span>{(countries as Country[]).find(c => c.code === results.country)?.name || results.country}</span>
+                        <span>{getCountryName(results.country)}</span>
                       </div>
                     </CardDescription>
                   </div>
