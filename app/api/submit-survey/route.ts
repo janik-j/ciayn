@@ -1,19 +1,26 @@
 import { NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { Database } from '@/lib/database.types'
+import { supabase } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
-    // Create a Supabase client configured for route handlers
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
-
     // Parse JSON data
     const disclosureData = await request.json()
 
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Get the access token from cookies
+    const cookieStore = await cookies()
+    const supabaseAccessToken = cookieStore.get('sb-access-token')?.value
+
+    if (!supabaseAccessToken) {
+      return NextResponse.json({ 
+        error: 'Authentication failed',
+        details: 'No access token found'
+      }, { status: 401 })
+    }
+
+    // Get the current user using the access token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(supabaseAccessToken)
 
     if (authError) {
       console.error('Auth error:', authError)
