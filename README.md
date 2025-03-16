@@ -1,4 +1,4 @@
-# CIAYN - Supply Chain ESG Risk Analysis Platform
+# CIAYN (Compliance Is All You Need) - Supply Chain ESG Risk Analysis Platform
 
 ![CIAYN Banner](https://img.shields.io/badge/CIAYN-Supply%20Chain%20ESG%20Analysis-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
