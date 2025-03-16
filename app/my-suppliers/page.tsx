@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { supabase } from "@/lib/supabase/client"
 import { SupplierListPage } from "@/components/supplier-list-page"
@@ -71,12 +71,12 @@ export default function MySuppliersPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login?redirectTo=/my-suppliers')
+      router.push('/login')
     }
   }, [user, loading, router])
 
   // Function to fetch suppliers data
-  const fetchSuppliers = useCallback(async () => {
+  const fetchSuppliers = async () => {
     if (!user) return
     
     setIsLoading(true)
@@ -85,32 +85,9 @@ export default function MySuppliersPage() {
     try {
       console.log("Fetching suppliers for user:", user.id)
       
-      // Check if we can reach Supabase
-      try {
-        const { data: healthCheck, error: healthCheckError } = await supabase
-          .from('user_supplier_lists')
-          .select('count')
-          .limit(1)
-        
-        if (healthCheckError) {
-          console.error("Supabase health check failed:", healthCheckError)
-          setError(`Supabase connection issue: ${healthCheckError.message}. Please check your network and Supabase configuration.`)
-          setIsLoading(false)
-          return
-        }
-        
-        console.log("Supabase health check passed:", healthCheck)
-      } catch (healthErr) {
-        console.error("Unexpected error during health check:", healthErr)
-      }
-      
-      // Continue with fetching associations
-      console.log("Table name being used:", 'user_supplier_lists')
-      console.log("User ID being used for query:", user.id, "Type:", typeof user.id)
-      
       // Fetch the user's associated suppliers from the association table
       const { data: associations, error: associationsError } = await supabase
-        .from('user_supplier_lists')
+        .from('user_supplier_association')
         .select('supplier')
         .eq('user', user.id)
       
@@ -162,7 +139,7 @@ export default function MySuppliersPage() {
         let lastUpdated = "Unknown date"
         try {
           if (supplier.last_updated) {
-            lastUpdated = new Date(supplier.last_updated).toLocaleDateString('en-US', {
+            lastUpdated = new Date(supplier.last_updated).toLocaleDateString('de-DE', {
               day: '2-digit',
               month: '2-digit',
               year: 'numeric'
@@ -206,14 +183,14 @@ export default function MySuppliersPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [user])
+  }
 
   // Fetch suppliers data when user is available
   useEffect(() => {
     if (user) {
       fetchSuppliers()
     }
-  }, [user, fetchSuppliers])
+  }, [user])
   
   // Don't render anything while loading or if not logged in
   if (loading || !user) {
@@ -275,11 +252,6 @@ export default function MySuppliersPage() {
     )
   }
 
-  // Main content with suppliers
-  // Log supplier information for debugging
-  console.log("About to render SupplierListPage with suppliers:", suppliers);
-  console.log("Suppliers array length:", suppliers.length);
-  
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
@@ -287,16 +259,10 @@ export default function MySuppliersPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-slate-800">My Suppliers</h1>
         </div>
-        {isLoading ? (
-          <div className="p-8 text-center bg-white rounded-lg shadow-sm border border-slate-200">
-            <h2 className="text-xl font-semibold mb-2">Loading...</h2>
-            <p className="text-slate-500">Please wait while we load your suppliers.</p>
-          </div>
-        ) : (
-          <SupplierListPage initialSuppliers={suppliers} />
-        )}
+        
+        <SupplierListPage initialSuppliers={suppliers} />
       </main>
     </div>
-  )
+  );
 }
 

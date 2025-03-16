@@ -141,26 +141,48 @@ export function UploadStatus({ documents, complianceStatus, getComplianceColor }
 interface RegulationOverviewProps {
   title: string;
   description: string;
-  complianceStatus: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown";
-  getComplianceScore: (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => number;
-  getComplianceColor: (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => string;
+  complianceStatus: number;
+  getComplianceScore: (score: number) => string;
+  getComplianceColor: (score: number) => string;
   regulationInfo: string;
   documents: DocumentUploadType[];
-  handleFileUpload: (documentIndex: number, documentType: RegulationType) => void;
-  documentType: RegulationType;
+  handleFileUpload: (() => void) | ((file: File) => Promise<any>);
+  documentType: 'lksg' | 'csrd' | 'cbam' | 'reach';
 }
 
-export function RegulationOverview({ 
-  title, 
-  description, 
-  complianceStatus, 
-  getComplianceScore, 
+export function RegulationOverview({
+  title,
+  description,
+  complianceStatus,
+  getComplianceScore,
   getComplianceColor,
   regulationInfo,
   documents,
   handleFileUpload,
   documentType
 }: RegulationOverviewProps) {
+  // File input ref
+  const handleUploadClick = () => {
+    if (typeof handleFileUpload === 'function') {
+      if (handleFileUpload.length === 0) {
+        // If it takes no parameters, just call it directly (for modal)
+        handleFileUpload();
+      } else {
+        // Otherwise use the file input approach
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.pdf,.doc,.docx,.xls,.xlsx,.csv,.zip';
+        fileInput.onchange = (e) => {
+          const files = (e.target as HTMLInputElement).files;
+          if (files && files[0]) {
+            (handleFileUpload as (file: File) => Promise<any>)(files[0]);
+          }
+        };
+        fileInput.click();
+      }
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
