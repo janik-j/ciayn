@@ -42,16 +42,26 @@ export function MainTab({
   const [hasLksgDisclosure, setHasLksgDisclosure] = useState(false);
   
   const getTotalComplianceScore = () => {
-    const scores = [
-      getComplianceScore(supplier.complianceStatus.lksg),
-      getComplianceScore(supplier.complianceStatus.csrd),
-      getComplianceScore(supplier.complianceStatus.cbam),
-      getComplianceScore(supplier.complianceStatus.reach),
-      getComplianceScore(supplier.complianceStatus.csdd)
-    ];
+    // Calculate document score based on the ratio of uploaded documents to total documents
+    const totalUploaded = documentCounts.lksg.uploaded + documentCounts.csrd.uploaded + 
+                        documentCounts.cbam.uploaded + documentCounts.reach.uploaded;
+    const totalDocuments = documentCounts.lksg.total + documentCounts.csrd.total + 
+                        documentCounts.cbam.total + documentCounts.reach.total;
     
-    const average = scores.reduce((a, b) => a + b, 0) / scores.length;
-    return Math.round(average);
+    // Calculate document score as a percentage (0-100)
+    const documentScore = totalDocuments > 0 ? Math.round((totalUploaded / totalDocuments) * 100) : 0;
+    
+    // Use the countryScore or default to 50 if not available
+    const currentCountryScore = countryScore !== null ? countryScore : 50;
+    
+    // Calculate the final score as the mean of document_score and country_score
+    const finalScore = Math.round((documentScore + currentCountryScore) / 2);
+    
+    console.log('Document Score:', documentScore, 
+                'Country Score:', currentCountryScore, 
+                'Final Score:', finalScore);
+    
+    return finalScore;
   }
 
   // Function to get country score based on incident ratios
@@ -408,12 +418,19 @@ export function MainTab({
             <div className="mt-6">
               <h3 className="text-sm font-medium mb-3">Compliance Overview</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
+                <Card className="relative">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">German Supply Chain Act (LkSG)</CardTitle>
                     <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {hasLksgDisclosure && (
+                      <div className="flex justify-end mb-2">
+                        <Badge className="bg-emerald-100 text-emerald-800">
+                          Disclosure Added
+                        </Badge>
+                      </div>
+                    )}
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -424,18 +441,14 @@ export function MainTab({
                             / {documentCounts.lksg.total}
                           </span>
                         </div>
-                        <Badge 
-                          className={
-                            hasLksgDisclosure
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-red-100 text-red-800"
-                          }
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigateToTab('lksg')}
+                          className="text-xs"
                         >
-                          {hasLksgDisclosure
-                            ? "Disclosure Added" 
-                            : "Missing Disclosure"
-                          }
-                        </Badge>
+                          Edit Documents
+                        </Button>
                       </div>
                       {!hasLksgDisclosure && (
                         <p className="text-sm text-red-600 mt-2">
@@ -446,12 +459,19 @@ export function MainTab({
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="relative">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">CSRD</CardTitle>
                     <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {documentCounts.csrd.uploaded === documentCounts.csrd.total && (
+                      <div className="flex justify-end mb-2">
+                        <Badge className={getComplianceColor(supplier.complianceStatus.csrd)}>
+                          {supplier.complianceStatus.csrd}
+                        </Badge>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-3xl font-semibold">
@@ -461,30 +481,31 @@ export function MainTab({
                           / {documentCounts.csrd.total}
                         </span>
                       </div>
-                      {documentCounts.csrd.uploaded < documentCounts.csrd.total ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => navigateToTab('csrd')}
-                          className="text-xs"
-                        >
-                          Upload Documents
-                        </Button>
-                      ) : (
-                        <Badge className={getComplianceColor(supplier.complianceStatus.csrd)}>
-                          {supplier.complianceStatus.csrd}
-                        </Badge>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigateToTab('csrd')}
+                        className="text-xs"
+                      >
+                        Edit Documents
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="relative">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">CBAM</CardTitle>
                     <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {documentCounts.cbam.uploaded === documentCounts.cbam.total && (
+                      <div className="flex justify-end mb-2">
+                        <Badge className={getComplianceColor(supplier.complianceStatus.cbam)}>
+                          {supplier.complianceStatus.cbam}
+                        </Badge>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-3xl font-semibold">
@@ -494,30 +515,31 @@ export function MainTab({
                           / {documentCounts.cbam.total}
                         </span>
                       </div>
-                      {documentCounts.cbam.uploaded < documentCounts.cbam.total ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => navigateToTab('cbam')}
-                          className="text-xs"
-                        >
-                          Upload Documents
-                        </Button>
-                      ) : (
-                        <Badge className={getComplianceColor(supplier.complianceStatus.cbam)}>
-                          {supplier.complianceStatus.cbam}
-                        </Badge>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigateToTab('cbam')}
+                        className="text-xs"
+                      >
+                        Edit Documents
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="relative">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">REACH</CardTitle>
                     <CardDescription className="text-sm text-slate-500">Documents Uploaded</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {documentCounts.reach.uploaded === documentCounts.reach.total && (
+                      <div className="flex justify-end mb-2">
+                        <Badge className={getComplianceColor(supplier.complianceStatus.reach)}>
+                          {supplier.complianceStatus.reach}
+                        </Badge>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-3xl font-semibold">
@@ -527,20 +549,14 @@ export function MainTab({
                           / {documentCounts.reach.total}
                         </span>
                       </div>
-                      {documentCounts.reach.uploaded < documentCounts.reach.total ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => navigateToTab('reach')}
-                          className="text-xs"
-                        >
-                          Upload Documents
-                        </Button>
-                      ) : (
-                        <Badge className={getComplianceColor(supplier.complianceStatus.reach)}>
-                          {supplier.complianceStatus.reach}
-                        </Badge>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigateToTab('reach')}
+                        className="text-xs"
+                      >
+                        Edit Documents
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

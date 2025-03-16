@@ -48,7 +48,7 @@ export function DocumentUploads({ documents, handleFileUpload, documentType }: D
                 className="flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" />
-                Upload
+                Edit
               </Button>
             )}
           </div>
@@ -195,8 +195,11 @@ export function RegulationOverview({
     }
   };
 
+  // Calculate if all documents are uploaded
+  const allDocumentsUploaded = documents.every(doc => doc.uploaded);
+
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>
@@ -204,6 +207,15 @@ export function RegulationOverview({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Display status badge at top when all documents are uploaded */}
+        {allDocumentsUploaded && (
+          <div className="flex justify-end mb-3">
+            <Badge className={getComplianceColor(complianceStatus)}>
+              {complianceStatus}
+            </Badge>
+          </div>
+        )}
+        
         <div className="mb-6">
           <h3 className="text-sm font-medium mb-3">Compliance Status</h3>
           <div className="flex items-center gap-3">
@@ -229,7 +241,17 @@ export function RegulationOverview({
             </AlertDescription>
           </Alert>
 
-          <h3 className="text-sm font-medium pt-2">Required Documentation</h3>
+          <div className="flex justify-between items-center pt-2">
+            <h3 className="text-sm font-medium">Required Documentation</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleUploadClick}
+              className="text-xs"
+            >
+              Edit Documents
+            </Button>
+          </div>
           <DocumentUploads 
             documents={documents} 
             handleFileUpload={handleFileUpload as any} 
