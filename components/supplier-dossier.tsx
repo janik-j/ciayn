@@ -214,7 +214,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     setCheckingStatus(true)
     try {
       const { data, error } = await supabase
-        .from('user_supplier_association')
+        .from('user_supplier_lists')
         .select('user, supplier')
         .eq('user', user.id)
         .eq('supplier', results.id)
@@ -454,12 +454,11 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
 
     try {
       const { error } = await supabase
-        .from('user_supplier_association')
+        .from('user_supplier_lists')
         .insert([
           { 
             user: user.id, 
             supplier: results.id,
-            created_at: new Date().toISOString()
           }
         ])
         .select('user, supplier')
@@ -516,7 +515,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
 
     try {
       const { error } = await supabase
-        .from('user_supplier_association')
+        .from('user_supplier_lists')
         .delete()
         .eq('user', user.id)
         .eq('supplier', results.id)

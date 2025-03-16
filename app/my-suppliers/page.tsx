@@ -88,7 +88,7 @@ export default function MySuppliersPage() {
       // Check if we can reach Supabase
       try {
         const { data: healthCheck, error: healthCheckError } = await supabase
-          .from('user_supplier_association')
+          .from('user_supplier_lists')
           .select('count')
           .limit(1)
         
@@ -105,12 +105,12 @@ export default function MySuppliersPage() {
       }
       
       // Continue with fetching associations
-      console.log("Table name being used:", 'user_supplier_association')
+      console.log("Table name being used:", 'user_supplier_lists')
       console.log("User ID being used for query:", user.id, "Type:", typeof user.id)
       
       // Fetch the user's associated suppliers from the association table
       const { data: associations, error: associationsError } = await supabase
-        .from('user_supplier_association')
+        .from('user_supplier_lists')
         .select('supplier')
         .eq('user', user.id)
       
