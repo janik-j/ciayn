@@ -9,8 +9,9 @@ import { useAuth } from "@/hooks/useAuth"
 import { FormEvent } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function LoginPage() {
+function LoginContent() {
   const { signIn } = useAuth()
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -65,12 +66,20 @@ export default function LoginPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline">
+            <Link href={`/register${redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`} className="text-primary hover:underline">
               Register
             </Link>
           </div>
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 } 
