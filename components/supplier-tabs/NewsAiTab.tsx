@@ -18,9 +18,9 @@ export function NewsAiTab({ supplier }: NewsAiTabProps) {
       </CardHeader>
       <CardContent>
         <Newsfeed 
-          companyName="Microsoft" 
+          companyName={supplier.name}
           title="Recent News"
-          description="Real-time news analysis and AI-driven insights about Microsoft"
+          description={`Real-time news analysis and AI-driven insights about ${supplier.name}`}
         />
       </CardContent>
     </Card>
