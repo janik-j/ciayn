@@ -290,7 +290,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                       size="sm"
                       onClick={() => viewSupplierDetails(supplier)}
                     >
-                      View Profile
+                      View Supplier 
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
                   </div>
