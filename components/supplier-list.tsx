@@ -49,6 +49,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
   const [refreshingIds, setRefreshingIds] = useState<string[]>([])
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
   const [filtersVisible, setFiltersVisible] = useState(false)
+  const [lksgDisclosures, setLksgDisclosures] = useState<{[key: string]: boolean}>({})
   const router = useRouter()
 
   // Fetching suppliers from API
@@ -82,6 +83,54 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
   useEffect(() => {
     fetchSuppliers()
   }, [fetchSuppliers])
+
+  // Add new effect for checking LkSG disclosures
+  useEffect(() => {
+    const checkLksgDisclosures = async () => {
+      const disclosureStatus: {[key: string]: boolean} = {};
+      
+      for (const supplier of suppliers) {
+        try {
+          // First get all suppliers associated with users
+          const { data: associations, error: assocError } = await supabase
+            .from('user_supplier_association')
+            .select('user')
+            .eq('supplier', supplier.id);
+
+          if (assocError) {
+            console.error('Error checking supplier associations:', assocError);
+            continue;
+          }
+
+          if (!associations || associations.length === 0) {
+            disclosureStatus[supplier.id] = false;
+            continue;
+          }
+
+          // Get all user IDs that are associated with this supplier
+          const userIds = associations.map(assoc => assoc.user);
+
+          // Check if any of these users have an LKSG disclosure
+          const { data: disclosures, error: discError } = await supabase
+            .from('lksg_disclosures')
+            .select('*')
+            .in('user_id', userIds)
+            .single();
+
+          disclosureStatus[supplier.id] = !!disclosures;
+        } catch (error) {
+          console.error('Error in LKSG disclosure check:', error);
+          disclosureStatus[supplier.id] = false;
+        }
+      }
+      
+      setLksgDisclosures(disclosureStatus);
+    };
+
+    if (suppliers.length > 0) {
+      checkLksgDisclosures();
+    }
+  }, [suppliers]);
 
   // Filter suppliers based on search term
   const filteredSuppliers = suppliers.filter(
@@ -251,8 +300,8 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                       <div className="space-y-1">
                         <h4 className="text-xs font-medium text-slate-500">LkSG</h4>
                         <div className="flex items-center gap-1">
-                          <Badge className={"Coming soon"}>
-                            {"Coming soon"}
+                          <Badge className={lksgDisclosures[supplier.id] ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}>
+                            {lksgDisclosures[supplier.id] ? "Compliant" : "Missing Disclosure"}
                           </Badge>
                         </div>
                       </div>
