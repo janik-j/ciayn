@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRouter } from "next/navigation"
 import { CompanySearch } from "./company-search"
+import { CompanyLogo } from "./company-logo"
 import { SupplierData, supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/components/ui/use-toast"
@@ -96,6 +97,11 @@ type DisplaySupplierData = {
 
 interface SupplierDossierProps {
   initialData?: DisplaySupplierData;
+}
+
+type Country = {
+  code: string;
+  name: string;
 }
 
 export default function SupplierDossier({ initialData }: SupplierDossierProps) {
@@ -709,11 +715,20 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
           <Card className="mb-6">
             <CardHeader>
               <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>{results.name}</CardTitle>
-                  <CardDescription>Supplier Assessment and Compliance</CardDescription>
+                <div className="flex items-center gap-4">
+                  <CompanyLogo companyName={results.name} size={48} />
+                  <div>
+                    <CardTitle>{results.name}</CardTitle>
+                    <CardDescription>
+                      <div className="flex items-center gap-2">
+                        <span>{results.industry}</span>
+                        <span>•</span>
+                        <span>{(countries as Country[]).find(c => c.code === results.country)?.name || results.country}</span>
+                      </div>
+                    </CardDescription>
+                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div>
                   {user && (
                     <Button 
                       variant="outline"
@@ -835,4 +850,3 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     </div>
   )
 }
-

@@ -18,7 +18,6 @@ import { supabase } from "@/lib/supabase"
 import { countries } from "@/lib/countries"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { CompanyLogo } from "@/components/company-logo"
 
 // Extend MainTabProps to include countryScore properties
 type MainTabProps = Pick<TabCommonProps, 'supplier' | 'getComplianceScore' | 'getComplianceColor'>
@@ -309,38 +308,33 @@ export function MainTab({
       <div className="md:col-span-2 h-full">
         <Card className="h-full flex flex-col">
           <CardHeader>
-            <div className="flex items-center space-x-4">
-              <CompanyLogo companyName={supplier.name} size={48} />
-              <div>
-                <CardTitle className="text-2xl">{supplier.name}</CardTitle>
-                <CardDescription>
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                    <Building className="h-4 w-4" />
-                    {supplier.industry}
+            <CardTitle>Company Overview</CardTitle>
+            <CardDescription>
+              <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                <Building className="h-4 w-4" />
+                {supplier.industry}
+                <span className="mx-1">•</span>
+                <MapPin className="h-4 w-4" />
+                {supplier.country}
+                <span className="mx-1">•</span>
+                <Users className="h-4 w-4" />
+                {supplier.employees.toLocaleString()} employees
+                {supplier.website && (
+                  <>
                     <span className="mx-1">•</span>
-                    <MapPin className="h-4 w-4" />
-                    {supplier.country}
-                    <span className="mx-1">•</span>
-                    <Users className="h-4 w-4" />
-                    {supplier.employees.toLocaleString()} employees
-                    {supplier.website && (
-                      <>
-                        <span className="mx-1">•</span>
-                        <Globe className="h-4 w-4" />
-                        <a
-                          href={supplier.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-emerald-600 hover:text-emerald-700"
-                        >
-                          Website
-                        </a>
-                      </>
-                    )}
-                  </div>
-                </CardDescription>
+                    <Globe className="h-4 w-4" />
+                    <a
+                      href={supplier.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-600 hover:text-emerald-700"
+                    >
+                      Website
+                    </a>
+                  </>
+                )}
               </div>
-            </div>
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-between">
             <div className="p-4 bg-slate-50 rounded-lg">
