@@ -20,6 +20,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
+import { CompanyLogo } from "@/components/company-logo"
 
 export function SupplierDetail({ id }: { id: string }) {
   const [isLoading, setIsLoading] = useState(true)
@@ -253,8 +254,24 @@ export function SupplierDetail({ id }: { id: string }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Supplier Dossier</CardTitle>
-            <CardDescription>Compliance and ESG risk assessment</CardDescription>
+            <div className="flex items-center space-x-4">
+              <CompanyLogo companyName={supplier.name} size={48} />
+              <div>
+                <CardTitle>{supplier.name}</CardTitle>
+                <CardDescription>
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <Building className="h-4 w-4" />
+                    {supplier.industry}
+                    <span className="mx-1">•</span>
+                    <MapPin className="h-4 w-4" />
+                    {supplier.country}
+                    <span className="mx-1">•</span>
+                    <Users className="h-4 w-4" />
+                    {supplier.employees.toLocaleString()} employees
+                  </div>
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {/* Company Information Section */}
@@ -550,4 +567,3 @@ export function SupplierDetail({ id }: { id: string }) {
     </div>
   )
 }
-
