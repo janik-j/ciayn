@@ -70,15 +70,6 @@ function LksgAnalysisRenderer({ analysis, articles }: { analysis: AnalysisResult
             <h4 className="font-medium">Supply Chain Due Diligence Analysis</h4>
           </div>
           <p className="text-sm text-slate-700">{analysis.summary}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <Badge variant="outline" className={`text-xs ${
-              analysis.riskLevel === "Low" ? "bg-emerald-100 text-emerald-800" :
-              analysis.riskLevel === "Medium" ? "bg-amber-100 text-amber-800" :
-              "bg-red-100 text-red-800"
-            }`}>
-              {analysis.riskLevel} Human Rights Risk
-            </Badge>
-          </div>
         </CardContent>
       </Card>
 
@@ -169,15 +160,6 @@ function CsrdAnalysisRenderer({ analysis, articles }: { analysis: AnalysisResult
             <h4 className="font-medium">Sustainability Reporting Analysis</h4>
           </div>
           <p className="text-sm text-slate-700">{analysis.summary}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <Badge variant="outline" className={`text-xs ${
-              analysis.riskLevel === "Low" ? "bg-emerald-100 text-emerald-800" :
-              analysis.riskLevel === "Medium" ? "bg-amber-100 text-amber-800" :
-              "bg-red-100 text-red-800"
-            }`}>
-              {analysis.riskLevel} Reporting Risk
-            </Badge>
-          </div>
         </CardContent>
       </Card>
 
@@ -264,15 +246,6 @@ function CbamAnalysisRenderer({ analysis, articles }: { analysis: AnalysisResult
             <h4 className="font-medium">Carbon Border Adjustment Analysis</h4>
           </div>
           <p className="text-sm text-slate-700">{analysis.summary}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <Badge variant="outline" className={`text-xs ${
-              analysis.riskLevel === "Low" ? "bg-emerald-100 text-emerald-800" :
-              analysis.riskLevel === "Medium" ? "bg-amber-100 text-amber-800" :
-              "bg-red-100 text-red-800"
-            }`}>
-              {analysis.riskLevel} Carbon Risk
-            </Badge>
-          </div>
         </CardContent>
       </Card>
 
@@ -363,15 +336,6 @@ function ReachAnalysisRenderer({ analysis, articles }: { analysis: AnalysisResul
             <h4 className="font-medium">Chemical Regulation Compliance Analysis</h4>
           </div>
           <p className="text-sm text-slate-700">{analysis.summary}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <Badge variant="outline" className={`text-xs ${
-              analysis.riskLevel === "Low" ? "bg-emerald-100 text-emerald-800" :
-              analysis.riskLevel === "Medium" ? "bg-amber-100 text-amber-800" :
-              "bg-red-100 text-red-800"
-            }`}>
-              {analysis.riskLevel} Chemical Risk
-            </Badge>
-          </div>
         </CardContent>
       </Card>
 
@@ -462,15 +426,6 @@ function GeneralAnalysisRenderer({ analysis, articles }: { analysis: AnalysisRes
             <h4 className="font-medium">AI Analysis Summary</h4>
           </div>
           <p className="text-sm text-slate-700">{analysis.summary}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <Badge variant="outline" className={`text-xs ${
-              analysis.riskLevel === "Low" ? "bg-emerald-100 text-emerald-800" :
-              analysis.riskLevel === "Medium" ? "bg-amber-100 text-amber-800" :
-              "bg-red-100 text-red-800"
-            }`}>
-              {analysis.riskLevel} ESG Risk
-            </Badge>
-          </div>
         </CardContent>
       </Card>
 

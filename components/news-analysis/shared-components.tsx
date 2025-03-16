@@ -50,21 +50,25 @@ export function SourceLink({ url, color }: SourceLinkProps) {
   const validUrl = ensureValidUrl(url);
   const colorClass = color === "amber" 
     ? "text-amber-500 hover:text-amber-600" 
-    : "text-emerald-500 hover:text-emerald-600";
+    : color === "blue"
+      ? "text-blue-500 hover:text-blue-600"
+      : color === "purple"
+        ? "text-purple-500 hover:text-purple-600"
+        : "text-emerald-500 hover:text-emerald-600";
   
   return (
-    <Button
-      variant="link"
-      size="sm"
-      className={`px-0 ${colorClass}`}
+    <a
+      href={validUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex items-center text-sm font-medium ${colorClass} no-underline hover:underline cursor-pointer`}
       onClick={(e) => {
         e.stopPropagation();
-        window.open(validUrl, "_blank", "noopener,noreferrer");
       }}
     >
-      <ExternalLink className="h-3.5 w-3.5" />
-      <span className="sr-only">Source</span>
-    </Button>
+      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+      <span>Read more</span>
+    </a>
   );
 }
 

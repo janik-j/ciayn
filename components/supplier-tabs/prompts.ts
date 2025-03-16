@@ -6,7 +6,7 @@ export function getLksgPrompt(companyName: string): string {
   Identify specific incidents that might create compliance risks for companies doing business with them.
   Highlight areas where a purchasing company might need to implement additional due diligence measures when working with this supplier.
   Evaluate how well the supplier meets LkSG requirements and what documentation a purchasing company should request.
-  DO NOT include any action items, recommendations, or next steps in your analysis.`;
+  DO NOT include any action items, recommendations, or next steps in your analysis. Be reasonable and concise.`;
 }
 
 export function getCsrdPrompt(companyName: string): string {
@@ -15,7 +15,7 @@ export function getCsrdPrompt(companyName: string): string {
   Identify sustainability reporting gaps that could create risks for companies in their value chain.
   Highlight what additional information a purchasing company should request to ensure this supplier's activities align with CSRD requirements.
   Evaluate specific sustainability risks that might need to be included in a purchasing company's own CSRD reporting.
-  DO NOT include any action items, recommendations, or next steps in your analysis.`;
+  DO NOT include any action items, recommendations, or next steps in your analysis. Be reasonable and concise.`;
 }
 
 export function getCbamPrompt(companyName: string): string {
@@ -24,7 +24,7 @@ export function getCbamPrompt(companyName: string): string {
   Identify specific carbon-intensive products that could create CBAM compliance costs for purchasing companies.
   Highlight what emissions data a purchasing company should request from this supplier to meet CBAM reporting requirements.
   Evaluate how this supplier's carbon footprint might affect a purchasing company's climate targets and reporting obligations.
-  DO NOT include any action items, recommendations, or next steps in your analysis.`;
+  DO NOT include any action items, recommendations, or next steps in your analysis. Be reasonable and concise.`;
 }
 
 export function getReachPrompt(companyName: string): string {
@@ -33,7 +33,7 @@ export function getReachPrompt(companyName: string): string {
   Identify specific substances of concern in their products that could create compliance issues for purchasing companies.
   Highlight what chemical safety documentation a purchasing company should request from this supplier.
   Evaluate how well the supplier meets REACH requirements and potential compliance risks for companies using their products.
-  DO NOT include any action items, recommendations, or next steps in your analysis.`;
+  DO NOT include any action items, recommendations, or next steps in your analysis. Be reasonable and concise.`;
 }
 
 export function getGeneralPrompt(companyName: string): string {
@@ -42,5 +42,5 @@ export function getGeneralPrompt(companyName: string): string {
   Identify key ESG (Environmental, Social, and Governance) factors that purchasing companies should monitor.
   Highlight what documentation and information a purchasing company should request to verify compliance.
   Evaluate overall compliance risks and how they might impact a purchasing company's due diligence obligations.
-  DO NOT include any action items, recommendations, or next steps in your analysis.`;
+  DO NOT include any action items, recommendations, or next steps in your analysis. Be reasonable and concise.`;
 } 

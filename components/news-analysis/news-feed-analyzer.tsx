@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { AnalyzerProps, AnalysisResult, NewsApiResponse, NewsArticle } from "./types"
 import { LoadingIndicator, ErrorAlert, ApiKeyMissing, SourceLink } from "./shared-components"
 import { AnalysisRenderer } from "./analysis-renderers"
-import { formatDate, findArticleUrl } from "./utils"
+import { formatDate, findArticleUrl, ensureValidUrl } from "./utils"
+import { Newsfeed } from "./newsfeed"
 
 // Configuration
 const NEWS_API_URL = "/api/news"
@@ -97,13 +98,9 @@ export function NewsFeedAnalyzer({
       
       setArticles(mappedArticles)
       setFilteredArticles(mappedArticles)
+      setIsLoading(false)
       
-      // Automatically analyze articles if we have them
-      if (mappedArticles.length > 0) {
-        analyzeArticles(mappedArticles, company, industry)
-      } else {
-        setIsLoading(false)
-      }
+      // Remove automatic analysis here, we'll do it on tab change instead
     } catch (err) {
       console.error("Error fetching news:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch news articles")
@@ -147,7 +144,6 @@ export function NewsFeedAnalyzer({
 
       const analysisData: AnalysisResult = await response.json()
       setAnalysis(analysisData)
-      setSelectedTab("analysis") // Switch to analysis tab when ready
     } catch (err) {
       console.error("Error analyzing articles:", err)
       setError(err instanceof Error ? err.message : "Failed to analyze articles")
@@ -161,6 +157,14 @@ export function NewsFeedAnalyzer({
   const handleRefresh = () => {
     fetchArticles(companyName)
   }
+
+  // Add useEffect to handle tab changes
+  useEffect(() => {
+    // Only trigger analysis when the user goes to the analysis tab and we have articles
+    if (selectedTab === "analysis" && articles.length > 0 && !analysis && !isAnalyzing) {
+      analyzeArticles(articles, companyName, industry)
+    }
+  }, [selectedTab, articles, analysis, isAnalyzing, companyName, industry])
 
   // Render
   return (
@@ -225,36 +229,42 @@ export function NewsFeedAnalyzer({
             ) : filteredArticles.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {filteredArticles.map((article, idx) => (
-                  <Card key={idx} className="overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex gap-4">
-                        {article.imageUrl && (
-                          <div className="hidden sm:block flex-shrink-0">
-                            <Avatar className="h-16 w-16 rounded">
-                              <AvatarImage src={article.imageUrl} alt={article.title} />
-                              <AvatarFallback>{article.source.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                          </div>
-                        )}
-                        <div className="flex-1 space-y-2">
-                          <div>
-                            <h4 className="font-medium line-clamp-2">{article.title}</h4>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                              <span>{article.source}</span>
-                              <span>•</span>
-                              <span>{formatDate(article.publishedAt)}</span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-slate-600 line-clamp-2">{article.snippet}</p>
-                          <div className="flex justify-between items-center pt-1">
-                            <div className="flex gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                {companyName}
-                              </Badge>
-                            </div>
-                            <SourceLink url={article.url} color="blue" />
-                          </div>
+                  <Card key={idx} className="overflow-hidden transition-shadow hover:shadow-md">
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-semibold mb-2">{article.title}</h3>
+                      
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="flex items-center">
+                            <Newspaper className="h-4 w-4 mr-1.5" />
+                            {article.source}
+                          </span>
                         </div>
+                        
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>{formatDate(article.publishedAt)}</span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-slate-600 mb-4">{article.snippet}</p>
+                      
+                      <div className="flex justify-end">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                          onClick={() => {
+                            if (article.url) {
+                              const validUrl = ensureValidUrl(article.url);
+                              window.open(validUrl, "_blank", "noopener,noreferrer");
+                            }
+                          }}
+                        >
+                          Read Full Article
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -346,13 +356,8 @@ export function AIAnalysisOnly({
       }
       
       setArticles(mappedArticles)
-      
-      // Automatically analyze articles if we have them
-      if (mappedArticles.length > 0) {
-        analyzeArticles(mappedArticles, company, industry)
-      } else {
-        setIsLoading(false)
-      }
+      // Start analysis immediately since this component is analysis-only
+      analyzeArticles(mappedArticles, company, industry)
     } catch (err) {
       console.error("Error fetching news:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch news articles")
@@ -446,6 +451,19 @@ export function AIAnalysisOnly({
           regulationType={regulationType} 
         />
       )}
+    </div>
+  )
+}
+
+export default function MicrosoftNewsAI() {
+  return (
+    <div className="container mx-auto py-8">
+      <Newsfeed 
+        companyName="Microsoft" 
+        title="News & AI Analysis"
+        description="Real-time news analysis and AI-driven insights about Microsoft"
+        industry="technology"
+      />
     </div>
   )
 } 

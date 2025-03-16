@@ -600,7 +600,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
               <TabsTrigger value="csrd" className="flex-1">CSRD</TabsTrigger>
               <TabsTrigger value="cbam" className="flex-1">CBAM</TabsTrigger>
               <TabsTrigger value="reach" className="flex-1">REACH</TabsTrigger>
-              <TabsTrigger value="news" className="flex-1">News/AI</TabsTrigger>
+              <TabsTrigger value="news" className="flex-1">Newsfeed</TabsTrigger>
             </TabsList>
 
             {/* Main Tab Content */}

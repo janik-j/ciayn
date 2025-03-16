@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { NewsFeedAnalyzer } from "@/components/news-feed-analyzer"
+import { Newsfeed } from "../news-analysis/newsfeed"
 import { TabCommonProps } from "./types"
 import { getGeneralPrompt } from "./prompts"
 
@@ -17,10 +17,10 @@ export function NewsAiTab({ supplier }: NewsAiTabProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <NewsFeedAnalyzer 
-          companyName={supplier.name} 
-          industry={supplier.industry} 
-          customPrompt={getGeneralPrompt(supplier.name)} 
+        <Newsfeed 
+          companyName="Microsoft" 
+          title="Recent News"
+          description="Real-time news analysis and AI-driven insights about Microsoft"
         />
       </CardContent>
     </Card>
