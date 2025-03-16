@@ -9,8 +9,9 @@ import { useAuth } from "@/hooks/useAuth"
 import { FormEvent } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function RegisterPage() {
+function RegisterContent() {
   const { signUp } = useAuth()
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -87,5 +88,13 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterContent />
+    </Suspense>
   )
 } 
