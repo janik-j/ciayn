@@ -96,10 +96,10 @@ export function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href="/profile">My Profile</Link>
+                      <Link href="/profile">User Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/disclosure">Edit My Disclosure</Link>
+                      <Link href="/disclosure">Disclosures</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
