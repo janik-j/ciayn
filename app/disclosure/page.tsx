@@ -4,6 +4,7 @@ import { Header } from "@/components/header"
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { lksg_disclosure_items } from '@/lib/lksg_disclosure'
 
 interface LKSGDisclosure {
   user_id: string;
@@ -38,9 +39,25 @@ interface LKSGDisclosure {
 export default function DisclosurePage() {
   const router = useRouter();
   const [disclosure, setDisclosure] = useState<LKSGDisclosure | null>(null);
+  const [originalDisclosure, setOriginalDisclosure] = useState<LKSGDisclosure | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Check if current disclosure differs from original
+  useEffect(() => {
+    if (disclosure && originalDisclosure) {
+      // Compare every field to see if there are changes
+      const changed = Object.keys(disclosure).some(key => {
+        if (key === 'last_updated') return false; // Ignore timestamp
+        return disclosure[key as keyof LKSGDisclosure] !== originalDisclosure[key as keyof LKSGDisclosure];
+      });
+      setHasChanges(changed);
+    } else {
+      setHasChanges(false);
+    }
+  }, [disclosure, originalDisclosure]);
 
   useEffect(() => {
     const fetchDisclosure = async () => {
@@ -63,14 +80,6 @@ export default function DisclosurePage() {
 
         console.log('Fetching disclosures for user:', user.id);
         
-        // Refresh the schema cache before fetching data
-        try {
-          await supabase.rpc('refresh_schema_cache');
-          console.log('Schema cache refreshed');
-        } catch (cacheError) {
-          console.log('Schema cache refresh not available, continuing anyway');
-        }
-
         // Now try to fetch the disclosure data
         const { data, error } = await supabase
           .from('lksg_disclosures')
@@ -88,6 +97,7 @@ export default function DisclosurePage() {
         if (data) {
           console.log('Disclosure data found:', data);
           setDisclosure(data as LKSGDisclosure);
+          setOriginalDisclosure(data as LKSGDisclosure);
         } else {
           console.log('No disclosure data found for user');
         }
@@ -100,59 +110,60 @@ export default function DisclosurePage() {
     fetchDisclosure();
   }, [router]);
 
-  const questions = [
-    { section: 'Child Labor', fields: [
-      { id: 'child_labor_processes', label: 'Do you have processes to prevent child labor?' },
-     { id: 'child_labor_violation', label: 'Have there been any child labor violations?' }
-    ]},
-    { section: 'Forced Labor', fields: [
-      { id: 'forced_labor_processes', label: 'Do you have processes to prevent forced labor?' }
-    ]},
-    { section: 'Slavery', fields: [
-      { id: 'slavery_violation', label: 'Have there been any slavery-related violations?' },
-      { id: 'slavery_processes', label: 'Do you have processes to prevent slavery?' }
-    ]},
-    { section: 'Forced Eviction', fields: [
-      { id: 'forced_eviction_violation', label: 'Have there been any forced eviction violations?' },
-      { id: 'forced_eviction_processes', label: 'Do you have processes to prevent forced evictions?' }
-    ]},
-    { section: 'Security Forces', fields: [
-      { id: 'security_forces_violation', label: 'Have there been any security forces-related violations?' },
-      { id: 'security_forces_processes', label: 'Do you have processes regarding security forces?' }
-    ]},
-    { section: 'Workplace Safety', fields: [
-      { id: 'workplace_safety_violation', label: 'Have there been any workplace safety violations?' },
-      { id: 'workplace_safety_processes', label: 'Do you have workplace safety processes?' }
-    ]},
-    { section: 'Freedom of Association', fields: [
-      { id: 'freedom_association_violation', label: 'Have there been any freedom of association violations?' },
-      { id: 'freedom_association_processes', label: 'Do you have processes to protect freedom of association?' }
-    ]},
-    { section: 'Employment Discrimination', fields: [
-      { id: 'employment_discrimination_violation', label: 'Have there been any discrimination violations?' },
-      { id: 'employment_discrimination_processes', label: 'Do you have anti-discrimination processes?' }
-    ]},
-    { section: 'Fair Wages', fields: [
-      { id: 'fair_wage_violation', label: 'Have there been any fair wage violations?' },
-      { id: 'fair_wage_processes', label: 'Do you have fair wage processes?' }
-    ]},
-    { section: 'Mercury Usage', fields: [
-      { id: 'mercury_violation', label: 'Have there been any mercury-related violations?' },
-      { id: 'mercury_processes', label: 'Do you have processes regarding mercury handling?' }
-    ]},
-    { section: 'Organic Pollutants', fields: [
-      { id: 'organic_pollutants_violation', label: 'Have there been any organic pollutant violations?' },
-      { id: 'organic_pollutants_processes', label: 'Do you have processes for handling organic pollutants?' }
-    ]},
-    { section: 'Hazardous Waste', fields: [
-      { id: 'hazardous_waste_violation', label: 'Have there been any hazardous waste violations?' },
-      { id: 'hazardous_waste_processes', label: 'Do you have hazardous waste management processes?' }
-    ]},
-    { section: 'Environmental Damage', fields: [
-      { id: 'environmental_damage_violation', label: 'Have there been any environmental damage violations?' },
-      { id: 'environmental_damage_processes', label: 'Do you have environmental protection processes?' }
-    ]}
+  // Define the categories in the correct order
+  const categories = [
+    'Child Labor',
+    'Forced Labor',
+    'Slavery',
+    'Forced Eviction',
+    'Security Forces',
+    'Workplace Safety',
+    'Freedom of Association',
+    'Employment Discrimination',
+    'Fair Wages',
+    'Mercury Usage',
+    'Organic Pollutants',
+    'Hazardous Waste',
+    'Environmental Damage'
   ];
+  
+  // Map db_name prefixes to their categories
+  const categoryMap: Record<string, string> = {
+    'child': 'Child Labor',
+    'forced_labor': 'Forced Labor',
+    'slavery': 'Slavery',
+    'forced_eviction': 'Forced Eviction',
+    'security_forces': 'Security Forces',
+    'workplace_safety': 'Workplace Safety',
+    'freedom_association': 'Freedom of Association',
+    'employment_discrimination': 'Employment Discrimination',
+    'fair_wage': 'Fair Wages',
+    'mercury': 'Mercury Usage',
+    'organic_pollutants': 'Organic Pollutants',
+    'hazardous_waste': 'Hazardous Waste',
+    'environmental_damage': 'Environmental Damage'
+  };
+  
+  // Build sections from disclosure items
+  const sections = categories.map(category => {
+    const fields = lksg_disclosure_items
+      .filter(item => {
+        // Match by the relevant db_name prefix
+        return Object.entries(categoryMap).some(([prefix, cat]) => {
+          return cat === category && item.db_name.startsWith(prefix);
+        });
+      })
+      .map(item => ({
+        id: item.db_name,
+        label: item.question,
+        yes_is_positive: item.yes_is_positive
+      }));
+    
+    return {
+      section: category,
+      fields
+    };
+  });
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -184,22 +195,20 @@ export default function DisclosurePage() {
                 const formValues: Record<string, boolean> = {};
                 
                 // Process all questions to ensure we have all field IDs
-                questions.forEach(section => {
-                  section.fields.forEach(field => {
-                    // Get the selected value for this field
-                    const yesInput = document.getElementById(`${field.id}-yes`) as HTMLInputElement | null;
-                    const noInput = document.getElementById(`${field.id}-no`) as HTMLInputElement | null;
-                    
-                    // Check which one is checked
-                    if (yesInput && yesInput.checked) {
-                      formValues[field.id] = true;
-                    } else if (noInput && noInput.checked) {
-                      formValues[field.id] = false;
-                    } else {
-                      // Default to false if neither is checked
-                      formValues[field.id] = false;
-                    }
-                  });
+                lksg_disclosure_items.forEach(item => {
+                  // Get the selected value for this field
+                  const yesInput = document.getElementById(`${item.db_name}-yes`) as HTMLInputElement | null;
+                  const noInput = document.getElementById(`${item.db_name}-no`) as HTMLInputElement | null;
+                  
+                  // Check which one is checked
+                  if (yesInput && yesInput.checked) {
+                    formValues[item.db_name] = true;
+                  } else if (noInput && noInput.checked) {
+                    formValues[item.db_name] = false;
+                  } else {
+                    // Default to false if neither is checked
+                    formValues[item.db_name] = false;
+                  }
                 });
                 
                 console.log('Form values:', formValues);
@@ -207,61 +216,13 @@ export default function DisclosurePage() {
                 // Create the disclosure data
                 const disclosureData = {
                   user_id: user.id,
-                  child_labor_violation: formValues.child_labor_violation || false,
-                  child_labor_processes: formValues.child_labor_processes || false,
-                  forced_labor_processes: formValues.forced_labor_processes || false,
-                  slavery_violation: formValues.slavery_violation || false,
-                  slavery_processes: formValues.slavery_processes || false,
-                  forced_eviction_violation: formValues.forced_eviction_violation || false,
-                  forced_eviction_processes: formValues.forced_eviction_processes || false,
-                  security_forces_violation: formValues.security_forces_violation || false,
-                  security_forces_processes: formValues.security_forces_processes || false,
-                  workplace_safety_violation: formValues.workplace_safety_violation || false,
-                  workplace_safety_processes: formValues.workplace_safety_processes || false,
-                  freedom_association_violation: formValues.freedom_association_violation || false,
-                  freedom_association_processes: formValues.freedom_association_processes || false,
-                  employment_discrimination_violation: formValues.employment_discrimination_violation || false,
-                  employment_discrimination_processes: formValues.employment_discrimination_processes || false,
-                  fair_wage_violation: formValues.fair_wage_violation || false,
-                  fair_wage_processes: formValues.fair_wage_processes || false,
-                  mercury_violation: formValues.mercury_violation || false,
-                  mercury_processes: formValues.mercury_processes || false,
-                  organic_pollutants_violation: formValues.organic_pollutants_violation || false,
-                  organic_pollutants_processes: formValues.organic_pollutants_processes || false,
-                  hazardous_waste_violation: formValues.hazardous_waste_violation || false,
-                  hazardous_waste_processes: formValues.hazardous_waste_processes || false,
-                  environmental_damage_violation: formValues.environmental_damage_violation || false,
-                  environmental_damage_processes: formValues.environmental_damage_processes || false,
+                  ...formValues,
                   last_updated: new Date().toISOString()
                 };
                 
                 console.log('Submitting data:', disclosureData);
                 
-                // Try to use the API route first (which has better error handling)
-                try {
-                  const response = await fetch('/api/submit-survey', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(disclosureData),
-                  });
-                  
-                  if (response.ok) {
-                    const result = await response.json();
-                    console.log('Submission result:', result);
-                    setSubmitStatus('success');
-                    setDisclosure(disclosureData as LKSGDisclosure);
-                    return;
-                  }
-                  
-                  console.log('API route failed, falling back to direct Supabase access');
-                } catch (apiError) {
-                  console.error('API route error:', apiError);
-                  console.log('Falling back to direct Supabase access');
-                }
-                
-                // Use client-side Supabase directly as fallback
+                // Use Supabase directly
                 const { data: existingData } = await supabase
                   .from('lksg_disclosures')
                   .select('id')
@@ -294,6 +255,7 @@ export default function DisclosurePage() {
                 console.log('Disclosure saved successfully');
                 setSubmitStatus('success');
                 setDisclosure(disclosureData as LKSGDisclosure);
+                setOriginalDisclosure(disclosureData as LKSGDisclosure);
               } catch (error) {
                 console.error('Submission error:', error);
                 setSubmitStatus('error');
@@ -303,7 +265,7 @@ export default function DisclosurePage() {
               }
             }}
           >
-            {questions.map((section) => (
+            {sections.map((section) => (
               <div key={section.section} className="border-b border-gray-200 pb-6 last:border-b-0">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">{section.section}</h2>
                 <div className="space-y-4">
@@ -320,12 +282,25 @@ export default function DisclosurePage() {
                           name={field.id}
                           value="true"
                           id={`${field.id}-yes`}
-                          defaultChecked={disclosure?.[field.id as keyof LKSGDisclosure] === true}
+                          checked={disclosure?.[field.id as keyof LKSGDisclosure] === true}
+                          onChange={() => {
+                            if (disclosure) {
+                              setDisclosure({
+                                ...disclosure,
+                                [field.id]: true
+                              } as LKSGDisclosure);
+                            }
+                          }}
                           className="hidden peer/yes"
                         />
                         <label
                           htmlFor={`${field.id}-yes`}
-                          className="px-3 py-1 text-sm font-medium border rounded-l cursor-pointer bg-white border-gray-200 hover:text-red-600 peer-checked/yes:border-red-500 peer-checked/yes:text-red-600 transition-colors duration-200"
+                          className={`px-3 py-1 text-sm font-medium border rounded-l cursor-pointer bg-white border-gray-200 
+                            ${field.yes_is_positive ? 'hover:text-green-600' : 'hover:text-red-600'} 
+                            ${disclosure?.[field.id as keyof LKSGDisclosure] === true ? 
+                              (field.yes_is_positive ? 'border-green-500 text-green-600' : 'border-red-500 text-red-600') : 
+                              ''} 
+                            transition-colors duration-200`}
                         >
                           Yes
                         </label>
@@ -334,12 +309,25 @@ export default function DisclosurePage() {
                           name={field.id}
                           value="false"
                           id={`${field.id}-no`}
-                          defaultChecked={disclosure?.[field.id as keyof LKSGDisclosure] === false}
+                          checked={disclosure?.[field.id as keyof LKSGDisclosure] === false}
+                          onChange={() => {
+                            if (disclosure) {
+                              setDisclosure({
+                                ...disclosure,
+                                [field.id]: false
+                              } as LKSGDisclosure);
+                            }
+                          }}
                           className="hidden peer/no"
                         />
                         <label
                           htmlFor={`${field.id}-no`}
-                          className="px-3 py-1 text-sm font-medium border rounded-r cursor-pointer bg-white border-gray-200 hover:text-green-600 peer-checked/no:border-green-500 peer-checked/no:text-green-600 transition-colors duration-200"
+                          className={`px-3 py-1 text-sm font-medium border rounded-r cursor-pointer bg-white border-gray-200 
+                            ${field.yes_is_positive ? 'hover:text-red-600' : 'hover:text-green-600'} 
+                            ${disclosure?.[field.id as keyof LKSGDisclosure] === false ? 
+                              (field.yes_is_positive ? 'border-red-500 text-red-600' : 'border-green-500 text-green-600') : 
+                              ''} 
+                            transition-colors duration-200`}
                         >
                           No
                         </label>
@@ -365,14 +353,14 @@ export default function DisclosurePage() {
               
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hasChanges}
                 className={`w-full rounded-md ${
-                  isSubmitting 
+                  isSubmitting || !hasChanges
                     ? 'bg-blue-400 cursor-not-allowed' 
                     : 'bg-blue-600 hover:bg-blue-500'
                 } px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600`}
               >
-                {isSubmitting ? 'Saving...' : 'Save Disclosures'}
+                {isSubmitting ? 'Saving...' : hasChanges ? 'Save Disclosures' : 'No Changes to Save'}
               </button>
             </div>
           </form>
