@@ -80,7 +80,7 @@ export function Header() {
                       <Link href="/profile">My Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile/edit">Edit Profile</Link>
+                      <Link href="/disclosure">Edit Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
@@ -114,4 +114,3 @@ export function Header() {
     </header>
   )
 }
-
