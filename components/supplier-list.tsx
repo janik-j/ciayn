@@ -35,19 +35,6 @@ type Supplier = {
   employees: number
   website: string
   lastUpdated: string
-  esgRisk: {
-    environmental: "Low" | "Medium" | "High"
-    social: "Low" | "Medium" | "High"
-    governance: "Low" | "Medium" | "High"
-    overall: "Low" | "Medium" | "High"
-  }
-  complianceStatus: {
-    lksg: "Compliant" | "Partially Compliant" | "Non-Compliant"
-    cbam: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-    csdd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-    csrd: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-    reach: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown"
-  }
 }
 
 export function SupplierList({ initialData = [] }: { initialData?: Supplier[] }) {
@@ -139,43 +126,6 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
     }
   }
 
-  // Get color for risk level
-  const getRiskColor = (risk: "Low" | "Medium" | "High") => {
-    switch (risk) {
-      case "Low":
-        return "bg-emerald-500 text-white"
-      case "Medium":
-        return "bg-amber-500 text-white"
-      case "High":
-        return "bg-red-500 text-white"
-      default:
-        return "bg-slate-300 text-white"
-    }
-  }
-
-  const getOverallRiskBadge = (risk: "Low" | "Medium" | "High") => {
-    return (
-      <Badge className={getRiskColor(risk)}>
-        {risk} Risk
-      </Badge>
-    )
-  }
-
-  // Get color for compliance status
-  const getComplianceColor = (status: "Compliant" | "Partially Compliant" | "Non-Compliant" | "Unknown") => {
-    switch (status) {
-      case "Compliant":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200"
-      case "Partially Compliant":
-        return "bg-amber-100 text-amber-800 border-amber-200"
-      case "Non-Compliant":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "Unknown":
-        return "bg-slate-100 text-slate-800 border-slate-200"
-      default:
-        return "bg-slate-100 text-slate-800 border-slate-200"
-    }
-  }
 
   // View details of a supplier - now redirects to profile page
   const viewSupplierDetails = (supplier: Supplier) => {
@@ -227,7 +177,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
           <Link href="/profile/add">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Add Profile
+              Add Supplier
             </Button>
           </Link>
         </div>
@@ -263,15 +213,12 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
             <Card key={supplier.id} className="overflow-hidden hover:shadow-md transition-shadow">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
-                  <div className={`w-2 md:w-1 flex-shrink-0 ${getRiskColor(supplier.esgRisk.overall).split(' ')[0]}`} />
+                  <div className={`w-2 md:w-1 flex-shrink-0 ${"High"}`} />
                   <div className="flex-1 p-4 md:p-6">
                     <div className="flex flex-col md:flex-row justify-between gap-4">
                       <div className="space-y-1 md:space-y-2">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-medium">{supplier.name}</h3>
-                          <Badge className={getRiskColor(supplier.esgRisk.overall)}>
-                            {supplier.esgRisk.overall} Risk
-                          </Badge>
                         </div>
                         <div className="grid grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
                           <div className="flex items-center gap-1">
@@ -320,7 +267,7 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
                           size="sm"
                           onClick={() => viewSupplierDetails(supplier)}
                         >
-                          View Profile
+                          View Supplier
                           <ChevronRight className="ml-1 h-4 w-4" />
                         </Button>
                       </div>
@@ -328,58 +275,34 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
 
                     <div className="grid grid-cols-1 md:grid-cols-8 gap-4 mt-4">
                       <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-slate-500">Environmental</h4>
-                        <Badge className={getRiskColor(supplier.esgRisk.environmental)}>
-                          {supplier.esgRisk.environmental}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-slate-500">Social</h4>
-                        <Badge className={getRiskColor(supplier.esgRisk.social)}>{supplier.esgRisk.social}</Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-slate-500">Governance</h4>
-                        <Badge className={getRiskColor(supplier.esgRisk.governance)}>
-                          {supplier.esgRisk.governance}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
                         <h4 className="text-xs font-medium text-slate-500">LkSG</h4>
                         <div className="flex items-center gap-1">
-                          <Badge className={getComplianceColor(supplier.complianceStatus.lksg)}>
-                            {supplier.complianceStatus.lksg}
+                          <Badge className={"Coming soon"}>
+                            {"Coming soon"}
                           </Badge>
                         </div>
                       </div>
                       <div className="space-y-1">
                         <h4 className="text-xs font-medium text-slate-500">CBAM</h4>
                         <div className="flex items-center gap-1">
-                          <Badge className={getComplianceColor(supplier.complianceStatus.cbam)}>
-                            {supplier.complianceStatus.cbam}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-medium text-slate-500">CSDD</h4>
-                        <div className="flex items-center gap-1">
-                          <Badge className={getComplianceColor(supplier.complianceStatus.csdd)}>
-                            {supplier.complianceStatus.csdd}
+                          <Badge className={"Coming soon"}>
+                            {"Coming soon"}
                           </Badge>
                         </div>
                       </div>
                       <div className="space-y-1">
                         <h4 className="text-xs font-medium text-slate-500">CSRD</h4>
                         <div className="flex items-center gap-1">
-                          <Badge className={getComplianceColor(supplier.complianceStatus.csrd)}>
-                            {supplier.complianceStatus.csrd}
+                          <Badge className={"Coming soon"}>
+                            {"Coming soon"}
                           </Badge>
                         </div>
                       </div>
                       <div className="space-y-1">
                         <h4 className="text-xs font-medium text-slate-500">REACH</h4>
                         <div className="flex items-center gap-1">
-                          <Badge className={getComplianceColor(supplier.complianceStatus.reach)}>
-                            {supplier.complianceStatus.reach}
+                          <Badge className={"Coming soon"}>
+                            {"Coming soon"}
                           </Badge>
                         </div>
                       </div>
