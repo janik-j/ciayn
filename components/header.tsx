@@ -57,16 +57,6 @@ export function Header() {
                 My Suppliers
               </Link>
             </li>
-            <li>
-              <Link href="#" className="text-slate-600 hover:text-emerald-600 text-sm font-medium">
-                Reports
-              </Link>
-            </li>
-            <li>
-              <Link href="#" className="text-slate-600 hover:text-emerald-600 text-sm font-medium">
-                Settings
-              </Link>
-            </li>
             {user ? (
               <li>
                 <DropdownMenu>
