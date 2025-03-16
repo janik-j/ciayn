@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation"
 import { SupplierDetail } from "@/components/supplier-detail"
 import { NewsFeedAnalyzer } from "@/components/news-feed-analyzer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { supabase } from "@/lib/supabase"
 
 // Define the supplier type
 type Supplier = {
@@ -50,13 +51,8 @@ type Supplier = {
 }
 
 export function SupplierList({ initialData = [] }: { initialData?: Supplier[] }) {
-  // Ensure initialData is an array for safety
-  const safeInitialData = Array.isArray(initialData) ? initialData : [];
-  console.log("SupplierList received initialData:", initialData);
-  console.log("initialData length:", safeInitialData.length);
-  
-  const [suppliers, setSuppliers] = useState<Supplier[]>(safeInitialData)
-  const [isLoading, setIsLoading] = useState(false)
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [refreshingIds, setRefreshingIds] = useState<string[]>([])
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
@@ -66,17 +62,14 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
   // Fetching suppliers from API
   const fetchSuppliers = useCallback(async () => {
     setIsLoading(true)
-
     try {
-      // If we have initial data, use that instead of making API call
-      if (safeInitialData.length > 0) {
-        setSuppliers(safeInitialData)
-        setIsLoading(false)
-        return
-      }
-      
-      // Try to fetch from our API endpoint
-      const response = await fetch('/api/my-suppliers')
+      const response = await fetch('/api/my-suppliers', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      })
       
       if (response.ok) {
         const { data } = await response.json()
@@ -91,22 +84,12 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
     } finally {
       setIsLoading(false)
     }
-  }, [safeInitialData]);
+  }, []);
 
-  // Make sure suppliers state is updated when initialData changes
+  // Fetch suppliers on mount and when dependencies change
   useEffect(() => {
-    console.log("SupplierList useEffect running with initialData:", safeInitialData);
-    
-    // Always set the suppliers from initialData on component mount
-    if (safeInitialData.length > 0) {
-      console.log("Setting suppliers from initialData (useEffect)");
-      setSuppliers(safeInitialData);
-      setIsLoading(false);
-    } else {
-      console.log("No initial data, fetching from API (useEffect)");
-      fetchSuppliers();
-    }
-  }, [safeInitialData, fetchSuppliers]);
+    fetchSuppliers()
+  }, [fetchSuppliers])
 
   // Filter suppliers based on search term
   const filteredSuppliers = suppliers.filter(
@@ -121,32 +104,6 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
     setRefreshingIds((prev) => [...prev, id])
 
     try {
-      // If we have initial data, simply use that data again
-      if (safeInitialData.length > 0) {
-        // Find the supplier in the initial data
-        const supplierToRefresh = safeInitialData.find(s => s.id === id);
-        if (supplierToRefresh) {
-          // Just update the timestamp to show something happened
-          setSuppliers((prev) =>
-            prev.map((supplier) => {
-              if (supplier.id === id) {
-                return {
-                  ...supplier,
-                  lastUpdated: new Date().toLocaleDateString('en-US', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  })
-                };
-              }
-              return supplier;
-            })
-          );
-        }
-        setRefreshingIds((prev) => prev.filter((i) => i !== id));
-        return;
-      }
-      
       // Call our API endpoint
       const response = await fetch('/api/my-suppliers', {
         method: 'PATCH',
@@ -232,19 +189,8 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
 
   // Handle "Refresh All" button click
   const handleRefreshAll = useCallback(() => {
-    console.log("Refresh All clicked, initialData length:", safeInitialData.length);
-    
-    // If we have initial data, simply reset to that data
-    if (safeInitialData.length > 0) {
-      console.log("Using initialData to refresh");
-      setSuppliers(safeInitialData);
-      return;
-    }
-    
-    // Otherwise try API call
-    console.log("No initialData, calling fetchSuppliers");
     fetchSuppliers();
-  }, [safeInitialData, fetchSuppliers]);
+  }, [fetchSuppliers]);
 
   return (
     <div className="space-y-6">
@@ -291,19 +237,6 @@ export function SupplierList({ initialData = [] }: { initialData?: Supplier[] })
         <div className="flex justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
         </div>
-      ) : safeInitialData.length > 0 && suppliers.length === 0 ? (
-        // This shouldn't normally happen - if we have initialData but suppliers is empty
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
-            <h3 className="text-lg font-medium text-slate-700 mb-1">Suppliers not loaded correctly</h3>
-            <p className="text-sm text-slate-500 mb-4">There was an issue displaying your suppliers</p>
-            <Button onClick={() => setSuppliers(safeInitialData)}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reload Suppliers
-            </Button>
-          </CardContent>
-        </Card>
       ) : suppliers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">

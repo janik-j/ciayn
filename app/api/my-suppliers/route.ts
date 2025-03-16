@@ -1,84 +1,173 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 
 // GET all suppliers with their risk and compliance data
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { data: suppliers, error: suppliersError } = await supabase
+    console.log('Attempting to fetch suppliers...');
+    
+    // Get the authorization header
+    const authHeader = request.headers.get('Authorization');
+    
+    if (!authHeader) {
+      console.error('No authorization header found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Create a new Supabase client with the user's token
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    });
+
+    // Get the user's session
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = user.id;
+    console.log('Fetching suppliers for user:', userId);
+
+    // Get the supplier IDs from user_supplier_lists
+    const { data: lists, error: listsError } = await supabaseClient
+      .from('user_supplier_lists')
+      .select(`
+        id,
+        supplier
+      `)
+      .eq('user', userId);
+
+    if (listsError) {
+      console.error('Error fetching user supplier lists:', listsError);
+      return NextResponse.json({ 
+        error: 'Failed to fetch user supplier lists',
+        details: listsError.message
+      }, { 
+        status: 400,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+    }
+
+    if (!lists || lists.length === 0) {
+      console.log('No supplier lists found for user');
+      return NextResponse.json({ data: [] }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+    }
+
+    const supplierIds = lists.map(list => list.supplier);
+    console.log('Found supplier IDs:', supplierIds);
+
+    // Fetch the suppliers with all their data
+    const { data: suppliers, error: suppliersError } = await supabaseClient
       .from('suppliers')
-      .select('*');
+      .select(`
+        id,
+        name,
+        industry,
+        country,
+        employees,
+        website,
+        created_at,
+        esg_risk,
+        red_flags,
+        compliance_status,
+        recommendations
+      `)
+      .in('id', supplierIds);
     
     if (suppliersError) {
-      return NextResponse.json({ error: suppliersError.message }, { status: 400 });
+      console.error('Error fetching suppliers:', suppliersError);
+      return NextResponse.json({ 
+        error: suppliersError.message,
+        details: suppliersError
+      }, { 
+        status: 400,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
     }
 
-    // Fetch esg risk data for all suppliers
-    const { data: esgRiskData, error: esgError } = await supabase
-      .from('supplier_esg_risk')
-      .select('*')
-      .in('supplier_id', suppliers.map(s => s.id));
-
-    if (esgError) {
-      return NextResponse.json({ error: esgError.message }, { status: 400 });
+    if (!suppliers || suppliers.length === 0) {
+      console.log('No suppliers found in database');
+      return NextResponse.json({ data: [] }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
     }
 
-    // Fetch compliance data for all suppliers
-    const { data: complianceData, error: complianceError } = await supabase
-      .from('supplier_compliance')
-      .select('*')
-      .in('supplier_id', suppliers.map(s => s.id));
+    console.log(`Found ${suppliers.length} suppliers`);
 
-    if (complianceError) {
-      return NextResponse.json({ error: complianceError.message }, { status: 400 });
-    }
-
-    // Combine all data
-    const formattedSuppliers = suppliers.map(supplier => {
-      const riskData = esgRiskData.find(r => r.supplier_id === supplier.id) || {
+    // Format the suppliers data
+    const formattedSuppliers = suppliers.map(supplier => ({
+      id: supplier.id,
+      name: supplier.name,
+      industry: supplier.industry,
+      country: supplier.country,
+      employees: supplier.employees,
+      website: supplier.website,
+      lastUpdated: supplier.created_at,
+      esgRisk: supplier.esg_risk || {
         environmental: 'Low',
         social: 'Low',
         governance: 'Low',
         overall: 'Low'
-      };
-      
-      const compliance = complianceData.find(c => c.supplier_id === supplier.id) || {
+      },
+      complianceStatus: supplier.compliance_status || {
         lksg: 'Unknown',
         cbam: 'Unknown',
         csdd: 'Unknown',
         csrd: 'Unknown',
         reach: 'Unknown'
-      };
-
-      return {
-        id: supplier.id,
-        name: supplier.name,
-        industry: supplier.industry,
-        country: supplier.country,
-        employees: supplier.employees,
-        website: supplier.website,
-        lastUpdated: supplier.last_updated,
-        esgRisk: {
-          environmental: riskData.environmental,
-          social: riskData.social,
-          governance: riskData.governance,
-          overall: riskData.overall
-        },
-        complianceStatus: {
-          lksg: compliance.lksg,
-          cbam: compliance.cbam,
-          csdd: compliance.csdd,
-          csrd: compliance.csrd,
-          reach: compliance.reach
-        }
-      };
-    });
+      },
+      redFlags: supplier.red_flags || [],
+      recommendations: supplier.recommendations || []
+    }));
     
-    return NextResponse.json({ data: formattedSuppliers });
+    console.log('Successfully formatted suppliers data');
+    return NextResponse.json({ data: formattedSuppliers }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
   } catch (error) {
-    console.error('API error:', error);
+    console.error('Unexpected API error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
+      { 
+        error: 'Internal Server Error',
+        details: error instanceof Error ? error.message : String(error)
+      },
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      }
     );
   }
 }
@@ -96,57 +185,33 @@ export async function PATCH(request: Request) {
     // Get current timestamp
     const now = new Date().toISOString();
 
-    // Update the last_updated timestamp
+    // Update the supplier with new ESG risk values
     const { error: updateError } = await supabase
       .from('suppliers')
-      .update({ last_updated: now })
+      .update({
+        created_at: now,
+        esg_risk: {
+          environmental: 'Low',
+          social: 'Low',
+          governance: 'Low',
+          overall: 'Low'
+        }
+      })
       .eq('id', id);
     
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });
     }
 
-    // Random risk values for demonstration (in real app, this would be a calculated value)
-    const riskLevels = ["Low", "Medium", "High"];
-    const getRandomRisk = () => riskLevels[Math.floor(Math.random() * riskLevels.length)];
-    
-    const environmental = getRandomRisk();
-    const social = getRandomRisk();
-    const governance = getRandomRisk();
-    
-    // Determine overall risk (highest of the three)
-    let overall = "Low";
-    if (environmental === "High" || social === "High" || governance === "High") {
-      overall = "High";
-    } else if (environmental === "Medium" || social === "Medium" || governance === "Medium") {
-      overall = "Medium";
-    }
-
-    // Update the risk assessment
-    const { data, error: riskError } = await supabase
-      .from('supplier_esg_risk')
-      .upsert({
-        supplier_id: id,
-        environmental,
-        social,
-        governance,
-        overall
-      })
-      .select();
-    
-    if (riskError) {
-      return NextResponse.json({ error: riskError.message }, { status: 400 });
-    }
-    
     return NextResponse.json({ 
       data: {
         id,
         lastUpdated: now,
         esgRisk: {
-          environmental,
-          social,
-          governance,
-          overall
+          environmental: 'Low',
+          social: 'Low',
+          governance: 'Low',
+          overall: 'Low'
         }
       } 
     });
