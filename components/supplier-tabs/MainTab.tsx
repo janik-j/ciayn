@@ -42,16 +42,26 @@ export function MainTab({
   const [hasLksgDisclosure, setHasLksgDisclosure] = useState(false);
   
   const getTotalComplianceScore = () => {
-    const scores = [
-      getComplianceScore(supplier.complianceStatus.lksg),
-      getComplianceScore(supplier.complianceStatus.csrd),
-      getComplianceScore(supplier.complianceStatus.cbam),
-      getComplianceScore(supplier.complianceStatus.reach),
-      getComplianceScore(supplier.complianceStatus.csdd)
-    ];
+    // Calculate document score based on the ratio of uploaded documents to total documents
+    const totalUploaded = documentCounts.lksg.uploaded + documentCounts.csrd.uploaded + 
+                        documentCounts.cbam.uploaded + documentCounts.reach.uploaded;
+    const totalDocuments = documentCounts.lksg.total + documentCounts.csrd.total + 
+                        documentCounts.cbam.total + documentCounts.reach.total;
     
-    const average = scores.reduce((a, b) => a + b, 0) / scores.length;
-    return Math.round(average);
+    // Calculate document score as a percentage (0-100)
+    const documentScore = totalDocuments > 0 ? Math.round((totalUploaded / totalDocuments) * 100) : 0;
+    
+    // Use the countryScore or default to 50 if not available
+    const currentCountryScore = countryScore !== null ? countryScore : 50;
+    
+    // Calculate the final score as the mean of document_score and country_score
+    const finalScore = Math.round((documentScore + currentCountryScore) / 2);
+    
+    console.log('Document Score:', documentScore, 
+                'Country Score:', currentCountryScore, 
+                'Final Score:', finalScore);
+    
+    return finalScore;
   }
 
   // Function to get country score based on incident ratios
