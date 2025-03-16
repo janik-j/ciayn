@@ -115,6 +115,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
   const [isLoadingScore, setIsLoadingScore] = useState(false);
   const [isSupplierOwned, setIsSupplierOwned] = useState<boolean>(true)
   const [isClaimingSupplier, setIsClaimingSupplier] = useState<boolean>(false)
+  const [activeTab, setActiveTab] = useState("main")
 
   // Document states for each regulation
   const [lksgDocuments, setLksgDocuments] = useState<DocumentUploadType[]>([
@@ -706,8 +707,12 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
     loadCountryScore();
   }, [results]);
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8">
       {!results ? (
         <CompanySearch onCompanyFound={handleCompanyFound} />
       ) : (
@@ -767,7 +772,7 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
             </Alert>
           )}
 
-          <Tabs defaultValue="main" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="w-full border-b">
               <TabsTrigger value="main" className="flex-1">Main</TabsTrigger>
               <TabsTrigger value="lksg" className="flex-1">German Supply Chain Act (LkSG)</TabsTrigger>
@@ -788,7 +793,8 @@ export default function SupplierDossier({ initialData }: SupplierDossierProps) {
                   reachDocuments
                 }}
                 getComplianceScore={getComplianceScore} 
-                getComplianceColor={getComplianceColor} 
+                getComplianceColor={getComplianceColor}
+                onTabChange={handleTabChange}
               />
             </TabsContent>
 

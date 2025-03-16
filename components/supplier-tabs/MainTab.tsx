@@ -20,12 +20,15 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
 // Extend MainTabProps to include countryScore properties
-type MainTabProps = Pick<TabCommonProps, 'supplier' | 'getComplianceScore' | 'getComplianceColor'>
+type MainTabProps = Pick<TabCommonProps, 'supplier' | 'getComplianceScore' | 'getComplianceColor'> & {
+  onTabChange?: (tab: string) => void;
+}
 
 export function MainTab({ 
   supplier, 
   getComplianceScore, 
-  getComplianceColor 
+  getComplianceColor,
+  onTabChange 
 }: MainTabProps) {
   const router = useRouter();
   const [countryScore, setCountryScore] = useState<number | null>(null);
@@ -299,7 +302,9 @@ export function MainTab({
   }, [supplier?.id]);
 
   const navigateToTab = (tab: string) => {
-    router.push(`/suppliers/${supplier.id}/${tab}`);
+    if (onTabChange) {
+      onTabChange(tab);
+    }
   };
 
   return (
