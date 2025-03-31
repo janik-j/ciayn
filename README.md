@@ -1,14 +1,30 @@
 # CIAYN (Compliance Is All You Need) - Supply Chain ESG Risk Analysis Platform
 
 ![CIAYN Banner](https://img.shields.io/badge/CIAYN-Supply%20Chain%20ESG%20Analysis-brightgreen)
+![Hackathon Winner](https://img.shields.io/badge/Winner-%20Tech%20Europe%20Hackathon:%20TACTO%20Track-gold)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## Overview
 
-CIAYN is an advanced platform designed to help businesses monitor, assess, and mitigate ESG (Environmental, Social, and Governance) risks across their supply chains. By leveraging real-time news analysis and AI-powered insights, CIAYN provides comprehensive risk assessments and actionable recommendations to ensure compliance with emerging regulations.
+CIAYN is an advanced platform designed to help businesses monitor, assess, and mitigate ESG (Environmental, Social, and Governance) risks across their supply chains. By leveraging real-time news analysis and AI-powered insights, CIAYN provides comprehensive risk assessments and actionable recommendations to ensure compliance with emerging regulations. 
 
 ## Key Features
 
+### 🌐 Supplier Network Graph
+- Interactive visualization of supplier relationships
+- Multi-tier supply chain mapping showing suppliers of suppliers
+- Real-time network updates as new connections are discovered
+- Visual risk indicators and compliance status
+- Drill-down capability for detailed supplier information
+
+### 👥 Supplier Profiles
+- Company profiles with comprehensive ESG information
+- Document sharing and verification
+- Direct messaging and collaboration tools
+- News feed integration for real-time updates
+- Claim and verify supplier relationships
+
+### 📊 Compliance Dashboard
 - **Real-time News Monitoring**: Automatically tracks and analyzes news about your suppliers from global sources
 - **AI-Powered Risk Analysis**: Uses Google's Gemini 2.0 Flash API to provide intelligent assessment of ESG risks
 - **Comprehensive Risk Categorization**: Classifies risks across four key domains:
@@ -16,10 +32,13 @@ CIAYN is an advanced platform designed to help businesses monitor, assess, and m
   - 👥 **Social**: Labor practices, human rights, community impact
   - 🏛️ **Governance**: Corporate structure, ethics, transparency
   - 📝 **Compliance**: Regulatory adherence, certifications, legal exposure
-- **Sourced Insights**: Every finding links back to its source article for verification and deeper understanding
-- **Actionable Recommendations**: Provides concrete steps for risk mitigation and due diligence
-- **Supplier Dossiers**: Create and maintain detailed profiles of your suppliers including risk scores
-- **Document Management**: Upload and organize relevant supplier documentation
+
+### 📑 Document Management
+- Centralized repository for compliance documentation
+- Automated document validation and verification
+- Progress tracking for document completeness
+- Smart notifications for document updates and deadlines
+- Support for multiple compliance frameworks (LkSG, CSRD, CBAM, REACH)
 
 ## Technology Stack
 
